@@ -58,6 +58,11 @@ static struct synaptics_dsx_hw_interface hw_if;
 
 static struct platform_device *synaptics_dsx_i2c_device;
 
+
+#ifdef CONFIG_VENDOR_AYN_ODIN_M2
+extern int dsi_get_flip(void);
+#endif
+
 #ifdef CONFIG_OF
 static int parse_dt(struct device *dev, struct synaptics_dsx_board_data *bdata)
 {
@@ -180,6 +185,16 @@ static int parse_dt(struct device *dev, struct synaptics_dsx_board_data *bdata)
 
 	prop = of_find_property(np, "synaptics,y-flip", NULL);
 	bdata->y_flip = prop > 0 ? true : false;
+
+#ifdef CONFIG_VENDOR_AYN_ODIN_M2
+	if(dsi_get_flip()){
+		bdata->x_flip = !bdata->x_flip;
+		bdata->y_flip = !bdata->y_flip;
+	}else{
+		TP_LOGE("%s is no flip\n", __FUNCTION__);
+	}
+	TP_LOGE("%s bdata->x_flip=%d bdata->y_flip=%d\n", __FUNCTION__, bdata->x_flip, bdata->y_flip);
+#endif
 
 	prop = of_find_property(np, "synaptics,ub-i2c-addr", NULL);
 	if (prop && prop->length) {

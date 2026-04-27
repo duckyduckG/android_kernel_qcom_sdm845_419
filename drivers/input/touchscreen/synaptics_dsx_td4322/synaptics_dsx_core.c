@@ -1584,8 +1584,12 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 			wy = temp;
 		}
 
-		//if (rmi4_data->hw_if->board_data->x_flip)
+#ifdef CONFIG_VENDOR_AYN_ODIN_M0
 		if(1)
+#endif
+#ifdef CONFIG_VENDOR_AYN_ODIN_M2
+		if (rmi4_data->hw_if->board_data->x_flip)
+#endif
 			x = rmi4_data->sensor_max_x - x;
 		if (rmi4_data->hw_if->board_data->y_flip)
 			y = rmi4_data->sensor_max_y - y;
