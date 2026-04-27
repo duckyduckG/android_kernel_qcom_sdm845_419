@@ -465,4 +465,14 @@ config ARCH_ZYNQMP
 	help
 	  This enables support for Xilinx ZynqMP Family
 
+config VENDOR_AYN_ODIN_M0
+	bool "AYN ODIN M0 support"
+	help
+	  This enables support for AYN ODIN M0
+
+config VENDOR_AYN_ODIN_M2
+	bool "AYN ODIN M2 support"
+	help
+	  This enables support for AYN ODIN M2
+
 endmenu
