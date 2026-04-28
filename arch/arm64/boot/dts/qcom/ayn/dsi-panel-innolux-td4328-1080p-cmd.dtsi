@@ -44,7 +44,6 @@
 		qcom,mdss-dsi-te-check-enable;
 		qcom,mdss-dsi-te-using-te-pin;
 		//qcom,mdss-dsi-te-using-wd;
-		//qcom,mdss-dsi-panel-orientation = "180";
 
 		qcom,mdss-dsi-display-timings {
 			timing@0{
@@ -62,16 +61,6 @@
 				qcom,mdss-dsi-v-top-border = <0>;
 				qcom,mdss-dsi-v-bottom-border = <0>;
 				qcom,mdss-dsi-panel-framerate = <60>;
-				qcom,mdss-dsi-on-command = [
-					29 01 00 00 00 00 02 B0 00
-					29 01 00 00 00 00 18 C2 01 F7 80 08 68 08 0C 10 00 08 70 00 00 00 00 00 00 00 03 83 00 00 00
-					29 01 00 00 00 00 02 D6 01
-					29 01 00 00 00 00 02 B0 03
-					39 01 00 00 00 00 05 2A 00 00 04 37
-					39 01 00 00 00 00 05 2B 00 00 07 7F
-					05 01 00 00 00 00 02 35 00
-					05 01 00 00 96 00 01 11
-					05 01 00 00 32 00 01 29];
 				qcom,mdss-dsi-off-command = [
 					05 01 00 00 05 00 02 28 00
 					05 01 00 00 53 00 02 10 00

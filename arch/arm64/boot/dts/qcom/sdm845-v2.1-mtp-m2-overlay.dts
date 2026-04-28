@@ -1,0 +1,59 @@
+/* Copyright (c) 2017, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/clock/qcom,gcc-sdm845.h>
+#include <dt-bindings/clock/qcom,camcc-sdm845.h>
+#include <dt-bindings/clock/qcom,dispcc-sdm845.h>
+#include <dt-bindings/clock/qcom,rpmh.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+#include "sdm845-sde-display.dtsi"
+#include "sdm845-mtp.dtsi"
+#include "sdm845-audio-overlay.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. SDM845 v2.1 MTP";
+	compatible = "qcom,sdm845-mtp", "qcom,sdm845", "qcom,mtp";
+	qcom,msm-id = <321 0x20001>;
+	qcom,board-id = <8 0>;
+};
+
+&dsi_innolux_td4328_1080p_cmd {
+	qcom,mdss-dsi-display-timings {
+		timing@0{
+			qcom,mdss-dsi-panel-orientation = "180";
+			qcom,mdss-dsi-on-command = [
+				29 01 00 00 00 00 02 B0 00
+				29 01 00 00 00 00 18 C2 01 F7 80 04 68 08 09 10 00 08 30 00 00 00 00 00 00 00 02 80 00 00 00
+				29 01 00 00 00 00 02 D6 01
+				29 01 00 00 00 00 02 B0 03
+				39 01 00 00 00 00 05 2A 00 00 04 37
+				39 01 00 00 00 00 05 2B 00 00 07 7F
+				05 01 00 00 00 00 02 35 00
+				05 01 00 00 96 00 01 11
+				05 01 00 00 32 00 01 29];
+		};
+	};
+};
+
+&sde_dsi1 {
+	qcom,dsi-default-panel = <&dsi_lt8912_1080_dsi1_video>;
+};
+
+&qupv3_se5_i2c {
+	synaptics@70 {
+		synaptics,swap-axes;
+	};
+};
