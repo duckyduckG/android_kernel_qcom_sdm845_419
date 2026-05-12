@@ -11,6 +11,11 @@
  * 					 earlycon=simplefb,0x9c000000,1080,2400
  * 					 also increase panic timeout to 10sec or more
  * 					 to read logs in case of kernel panic
+ *
+ * example for PL2: count_splash is at 0x9d400000
+ * 					 earlycon=simplefb,0x9d400000,1080,1920
+ * 					 also increase panic timeout to 10sec or more
+ * 					 to read logs in case of kernel panic
  */
 #include <linux/console.h>
 #include <linux/efi.h>
