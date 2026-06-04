@@ -12,6 +12,7 @@
 #include "dsi_drm.h"
 #include "sde_trace.h"
 #include "sde_dbg.h"
+#include "../../../../drivers/gpu/drm/bridge/lt8912/lt8912.h"
 
 #define to_dsi_bridge(x)     container_of((x), struct dsi_bridge, base)
 #define to_dsi_state(x)      container_of((x), struct dsi_connector_state, base)
@@ -551,6 +552,10 @@ int dsi_conn_set_info_blob(struct drm_connector *connector,
 		return -EINVAL;
 
 	dsi_display->drm_conn = connector;
+
+	if (dsi_display->display_type &&
+		!strcmp(dsi_display->display_type, "secondary"))
+		lt8912_set_drm_connector(connector);
 
 	sde_kms_info_add_keystr(info,
 		"display type", dsi_display->display_type);

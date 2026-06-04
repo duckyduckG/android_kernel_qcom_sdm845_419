@@ -49,6 +49,8 @@
 #include <linux/interrupt.h>
 #include <linux/jiffies.h>
 #include <linux/switch.h>
+#include <drm/drm_connector.h>
+#include <drm/drmP.h>
 
 #ifdef CONFIG_FB
 #include <linux/msm_drm_notify.h>
@@ -87,6 +89,7 @@ struct lt8912_private {
 	int hpd_irq;
 	#endif
 	bool audio_enable;
+	struct drm_connector *drm_conn;
 	int mConnect;
 	//	int main_i2c_addr;
 	//	int cec_dsi_i2c_addr;
@@ -947,6 +950,45 @@ int default_display_connected = HDMI_PULL_OUT;
 EXPORT_SYMBOL(default_display_connected);
 
 int /*g_power_set = 0, */g_suspend = 0,low_power_suspend_flag = 0,low_power_resume_flag = 0;
+
+static struct lt8912_private *g_lt8912_data;
+
+void lt8912_set_drm_connector(struct drm_connector *conn)
+{
+	if (g_lt8912_data)
+		g_lt8912_data->drm_conn = conn;
+}
+EXPORT_SYMBOL(lt8912_set_drm_connector);
+
+static void lt8912_send_hpd_event(struct lt8912_private *data)
+{
+	struct drm_connector *connector = data->drm_conn;
+	struct drm_device *dev;
+	char name[32], status[32];
+	char *envp[3];
+
+	if (!connector || !connector->dev)
+		return;
+
+	connector->status = data->mConnect ?
+	connector_status_connected : connector_status_disconnected;
+	dev = connector->dev;
+
+	snprintf(name, sizeof(name), "name=%s", connector->name);
+	snprintf(status, sizeof(status), "status=%s",
+		connector->status == connector_status_connected ?
+		"connected" : "disconnected");
+
+	envp[0] = name;
+	envp[1] = status;
+	envp[2] = NULL;
+
+	kobject_uevent_env(&dev->primary->kdev->kobj, KOBJ_CHANGE, envp);
+
+	if (!data->mConnect)
+		drm_sysfs_hotplug_event(dev);
+}
+
 #ifdef LT8912_HDP_WORK
 static void lt8912_hpd_work_fn(struct work_struct *work)
 {
@@ -1092,6 +1134,7 @@ static void lt8912_hpd_work_fn(struct work_struct *work)
 			printk("<3>""oncethings hdmi driver connected:%d",default_display_connected);
 		}
 		switch_set_state(&data->switch_dev, !!data->mConnect);	
+		lt8912_send_hpd_event(data);
     }
 
 	// printk("<3>""oncethings dp_display send dp_display_connected:%d",dp_display_connected);
@@ -1303,6 +1346,7 @@ static int lt8912_i2c_probe(struct i2c_client *client,
 
 	data->lt8912_client = client;
 	data->mConnect = 0;
+	g_lt8912_data = data;
 
 	It8912_kobj = client->dev.kobj;
 
@@ -1326,6 +1370,12 @@ static int lt8912_i2c_probe(struct i2c_client *client,
 	mdelay(10);
 	lt8912_power_set(data, true);
 
+	mdelay(500);
+	if (gpio_is_valid(data->hdmidet_gpio)) {
+		gpio_direction_input(data->hdmidet_gpio);
+		data->mConnect = gpio_get_value(data->hdmidet_gpio);
+		default_display_connected = data->mConnect ? HDMI_PULL_IN : HDMI_PULL_OUT;
+	}
 	data->regmap = devm_regmap_init_i2c(client, &lt8912_regmap_config);
 	if (IS_ERR(data->regmap)) {
 		dev_err(&client->dev, "init regmap failed.(%ld)\n",
@@ -1351,7 +1401,7 @@ static int lt8912_i2c_probe(struct i2c_client *client,
 #ifdef CONFIG_FB
 	data->fb_notifier.notifier_call = lt8912_fb_notifier_cb;
 	//ret = fb_register_client(&data->fb_notifier);
-	ret = msm_drm_register_client(&data->fb_notifier);
+	ret = 0;
 	pr_debug("[kevin]lt8912_fb_notifier_cb %d\n",ret);
 	if (ret < 0) {
 		pr_err("[kevin]Failed to register lt8912_fb_notifier_cb client\n");
@@ -1381,7 +1431,7 @@ static int lt8912_i2c_probe(struct i2c_client *client,
 	free_irq(data->hpd_irq, data);
 #endif
 #ifdef CONFIG_FB
-	msm_drm_unregister_client(&data->fb_notifier);
+	// msm_drm_unregister_client(&data->fb_notifier);
 err_fb_cb:
 #endif
 err_read_rev:
@@ -1406,7 +1456,7 @@ static int lt8912_i2c_remove(struct i2c_client *client)
 	free_irq(data->hpd_irq, data);
 #endif	
 #ifdef CONFIG_FB
-	msm_drm_unregister_client(&data->fb_notifier);
+	// msm_drm_unregister_client(&data->fb_notifier);
 #endif
 	lt8912_power_set(data, true);
 	devm_kfree(&client->dev, data);

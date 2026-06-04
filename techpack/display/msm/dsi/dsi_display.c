@@ -6056,12 +6056,15 @@ int dsi_display_get_info(struct drm_connector *connector,
 	for (i = 0; i < info->num_of_h_tiles; i++)
 		info->h_tile_instance[i] = display->ctrl[i].ctrl->cell_index;
 
-	info->is_connected = true;
-
-	if (!strcmp(display->display_type, "primary"))
+	if (!strcmp(display->display_type, "primary")) {
 		info->display_type = SDE_CONNECTOR_PRIMARY;
-	else if (!strcmp(display->display_type, "secondary"))
+		info->is_connected = true;
+	} else if (!strcmp(display->display_type, "secondary")) {
 		info->display_type = SDE_CONNECTOR_SECONDARY;
+		extern int default_display_connected;
+		info->is_connected = (default_display_connected == 1);
+		info->capabilities |= MSM_DISPLAY_CAP_HOT_PLUG;
+	}
 
 	info->width_mm = phy_props.panel_width_mm;
 	info->height_mm = phy_props.panel_height_mm;

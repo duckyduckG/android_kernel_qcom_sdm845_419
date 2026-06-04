@@ -1520,7 +1520,8 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
 					display,
 					&dsi_ops,
 					DRM_CONNECTOR_POLL_HPD,
-					DRM_MODE_CONNECTOR_DSI);
+						info.display_type == SDE_CONNECTOR_PRIMARY ? DRM_MODE_CONNECTOR_DSI :
+						DRM_MODE_CONNECTOR_HDMIA);
 		if (connector) {
 			priv->encoders[priv->num_encoders++] = encoder;
 			priv->connectors[priv->num_connectors++] = connector;

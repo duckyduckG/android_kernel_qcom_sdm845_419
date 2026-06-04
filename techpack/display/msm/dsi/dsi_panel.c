@@ -531,13 +531,15 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 	}
 
  
-	if (gpio_is_valid(88)){
-		gpio_direction_output(88, 1);
-		gpio_set_value(88, 1);
-		pr_err("[kevin]gpio_set_value 88 = 1\n");
-		ayn_panel_power_on();
+	if (strcmp(panel->name, "lt8912 1080p video mode dsi1 panel")) {
+		if (gpio_is_valid(88)){
+			gpio_direction_output(88, 1);
+			gpio_set_value(88, 1);
+			pr_err("[kevin]gpio_set_value 88 = 1\n");
+			ayn_panel_power_on();
+		}
+		synaptics_rmi4_disable_irq(false);//wufei:Fixed the bug of probabilistic interruption after TP power-off
 	}
-	synaptics_rmi4_disable_irq(false);//wufei:Fixed the bug of probabilistic interruption after TP power-off
 
 	goto exit;
 
@@ -562,13 +564,15 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 {
 	int rc = 0;
 
-	synaptics_rmi4_disable_irq(true);//wufei:Fixed the bug of probabilistic interruption after TP power-off
+	if (strcmp(panel->name, "lt8912 1080p video mode dsi1 panel")) {
+	synaptics_rmi4_disable_irq(true);
 	ayn_panel_power_off();
 	// dsi_panel_exd_disable(panel); /* 4.9 */
 	if (gpio_is_valid(88)){
 		gpio_direction_output(88, 0);
 		gpio_set_value(88, 0);
 		pr_err("[kevin]gpio_set_value 88 = 0\n");
+		}
 	}
 
 	if (gpio_is_valid(panel->reset_config.disp_en_gpio))
