@@ -417,6 +417,7 @@
 		compatible = "lontium,lt8912";
 		status = "okay";
 		reg = <0x48>;
+		qcom,ext-disp = <&ext_disp>;
 		lt,enable-audio = <1>;
 		lt,pwren-gpio = <&tlmm 8 0x00>;
 		lt,reset-gpio = <&tlmm 12 0x00>;

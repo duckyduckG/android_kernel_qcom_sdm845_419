@@ -235,6 +235,9 @@ struct extcon_cable {
 };
 
 static struct class *extcon_class;
+#if defined(CONFIG_ANDROID)
+static struct class_compat *switch_class;
+#endif /* CONFIG_ANDROID */
 
 static LIST_HEAD(extcon_dev_list);
 static DEFINE_MUTEX(extcon_dev_list_lock);
@@ -925,6 +928,34 @@ out:
 }
 EXPORT_SYMBOL_GPL(extcon_get_extcon_dev);
 
+
+/*
+ * struct class_compat is opaque to public headers, but its layout is
+ * stable: { struct kobject *kobj; } (drivers/base/class.c). We piggy-back
+ * on this so other drivers can hang legacy /sys/class/switch/<name>
+ * kobjects under the same compat tree extcon already creates.
+ */
+struct extcon_class_compat_layout {
+	struct kobject *kobj;
+};
+
+/**
+ * extcon_get_compat_switch_kobj() - return the kobject backing the
+ * compatibility /sys/class/switch/ tree, or NULL if it is not active.
+ *
+ * Drivers that need to expose legacy /sys/class/switch/<name> nodes
+ * (e.g. the AOSP "hdmi_audio" switch consumed by WiredAccessoryManager)
+ * can use this to attach their own kobjects without colliding with the
+ * class_compat_register("switch") that extcon already performs.
+ */
+struct kobject *extcon_get_compat_switch_kobj(void)
+{
+	if (!switch_class)
+		return NULL;
+	return ((struct extcon_class_compat_layout *)switch_class)->kobj;
+}
+EXPORT_SYMBOL_GPL(extcon_get_compat_switch_kobj);
+
 /**
  * extcon_register_notifier() - Register a notifier block to get notified by
  *				any state changes from the extcon.
@@ -1087,6 +1118,12 @@ static int create_extcon_class(void)
 		if (IS_ERR(extcon_class))
 			return PTR_ERR(extcon_class);
 		extcon_class->dev_groups = extcon_groups;
+
+#if defined(CONFIG_ANDROID)
+		switch_class = class_compat_register("switch");
+		if (WARN(!switch_class, "cannot allocate"))
+			return -ENOMEM;
+#endif /* CONFIG_ANDROID */
 	}
 
 	return 0;
@@ -1342,6 +1379,10 @@ int extcon_dev_register(struct extcon_dev *edev)
 		put_device(&edev->dev);
 		goto err_reg;
 	}
+#if defined(CONFIG_ANDROID)
+	if (switch_class)
+		ret = class_compat_create_link(switch_class, &edev->dev, NULL);
+#endif /* CONFIG_ANDROID */
 
 	mutex_lock(&extcon_dev_list_lock);
 	list_add(&edev->entry, &extcon_dev_list);
@@ -1419,6 +1460,10 @@ void extcon_dev_unregister(struct extcon_dev *edev)
 	}
 	kfree(edev->bnh);
 
+#if defined(CONFIG_ANDROID)
+	if (switch_class)
+		class_compat_remove_link(switch_class, &edev->dev, NULL);
+#endif
 	put_device(&edev->dev);
 }
 EXPORT_SYMBOL_GPL(extcon_dev_unregister);
@@ -1514,6 +1559,9 @@ module_init(extcon_class_init);
 
 static void __exit extcon_class_exit(void)
 {
+#if defined(CONFIG_ANDROID)
+	class_compat_unregister(switch_class);
+#endif
 	class_destroy(extcon_class);
 }
 module_exit(extcon_class_exit);

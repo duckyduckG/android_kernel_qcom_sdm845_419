@@ -250,7 +250,14 @@ extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
 extern struct extcon_dev *extcon_find_edev_by_node(struct device_node *node);
 extern struct extcon_dev *extcon_get_edev_by_phandle(struct device *dev,
 						     int index);
-
+#if defined(CONFIG_ANDROID)
+extern struct kobject *extcon_get_compat_switch_kobj(void);
+#else
+static inline struct kobject *extcon_get_compat_switch_kobj(void)
+{
+	return NULL;
+}
+#endif
 /* Following API get the name of extcon device. */
 extern const char *extcon_get_edev_name(struct extcon_dev *edev);
 

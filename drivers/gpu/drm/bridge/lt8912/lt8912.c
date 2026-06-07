@@ -49,6 +49,9 @@
 #include <linux/interrupt.h>
 #include <linux/jiffies.h>
 #include <linux/extcon.h>
+#include <linux/extcon-provider.h>
+#include <linux/msm_ext_display.h>
+#include <linux/of_platform.h>
 #include <drm/drm_connector.h>
 #include <drm/drmP.h>
 
@@ -91,6 +94,16 @@ struct lt8912_private {
 	bool audio_enable;
 	struct drm_connector *drm_conn;
 	int mConnect;
+
+	struct platform_device *audio_pdev;
+	struct platform_device *ext_pdev;
+	struct msm_ext_disp_init_data ext_audio_data;
+	struct msm_ext_disp_data ext_audio_disp_data;
+	bool ext_audio_registered;
+	bool ext_audio_connected;
+
+	struct kobject *hdmi_audio_kobj;
+	int hdmi_audio_state;
 	//	int main_i2c_addr;
 	//	int cec_dsi_i2c_addr;
 #ifdef LT8912_HDP_WORK
@@ -953,6 +966,9 @@ int /*g_power_set = 0, */g_suspend = 0,low_power_suspend_flag = 0,low_power_resu
 
 static struct lt8912_private *g_lt8912_data;
 
+static int lt8912_audio_notify(struct lt8912_private *data, bool connected);
+static void lt8912_hdmi_audio_switch_set(struct lt8912_private *data, int state);
+
 void lt8912_set_drm_connector(struct drm_connector *conn)
 {
 	if (g_lt8912_data)
@@ -1134,6 +1150,8 @@ static void lt8912_hpd_work_fn(struct work_struct *work)
 			printk("<3>""oncethings hdmi driver connected:%d",default_display_connected);
 		}
 		extcon_set_state_sync(data->audio_extcon, EXTCON_DISP_HDMI, !!data->mConnect);
+		lt8912_audio_notify(data, !!data->mConnect);
+		lt8912_hdmi_audio_switch_set(data, !!data->mConnect);
 		lt8912_send_hpd_event(data);
     }
 
@@ -1172,6 +1190,8 @@ static int lt8912_suspend(struct lt8912_private *pdata)
 		pdata->mConnect = gpio_get_value(pdata->hdmidet_gpio);
 	}
 	extcon_set_state_sync(pdata->audio_extcon, EXTCON_DISP_HDMI, !!pdata->mConnect);
+	lt8912_audio_notify(pdata, !!pdata->mConnect);
+	lt8912_hdmi_audio_switch_set(pdata, !!pdata->mConnect);
 
 	// power off
 	lt8912_power_set(pdata, false);
@@ -1236,6 +1256,309 @@ static int lt8912_fb_notifier_cb(struct notifier_block *self,
 	return 0;
 }
 #endif
+
+static struct lt8912_private *lt8912_audio_get_data(struct platform_device *pdev)
+{
+	struct msm_ext_disp_data *ext_data;
+
+	if (!pdev)
+		return ERR_PTR(-ENODEV);
+
+	ext_data = platform_get_drvdata(pdev);
+	if (!ext_data || !ext_data->intf_data)
+		return ERR_PTR(-EINVAL);
+
+	return ext_data->intf_data;
+}
+
+static int lt8912_audio_info_setup(struct platform_device *pdev,
+		struct msm_ext_disp_audio_setup_params *params)
+{
+	struct lt8912_private *data = lt8912_audio_get_data(pdev);
+
+	if (IS_ERR(data))
+		return PTR_ERR(data);
+
+	pr_debug("lt8912 audio info setup: ch=%u rate=%u\n",
+		params ? params->num_of_channels : 0,
+		params ? params->sample_rate_hz : 0);
+	return 0;
+}
+
+static u8 lt8912_audio_sad[3]  = { 0x09, 0x07, 0x07 };
+static u8 lt8912_audio_sadb[3] = { 0x01, 0x00, 0x00 };
+
+static int lt8912_audio_get_edid_blk(struct platform_device *pdev,
+		struct msm_ext_disp_audio_edid_blk *blk)
+{
+	struct lt8912_private *data = lt8912_audio_get_data(pdev);
+
+	if (IS_ERR(data))
+		return PTR_ERR(data);
+
+	if (blk) {
+		blk->audio_data_blk      = lt8912_audio_sad;
+		blk->audio_data_blk_size = sizeof(lt8912_audio_sad);
+		blk->spk_alloc_data_blk      = lt8912_audio_sadb;
+		blk->spk_alloc_data_blk_size = sizeof(lt8912_audio_sadb);
+	}
+	return 0;
+}
+
+static int lt8912_audio_cable_status(struct platform_device *pdev, u32 vote)
+{
+	struct lt8912_private *data = lt8912_audio_get_data(pdev);
+
+	if (IS_ERR(data))
+		return PTR_ERR(data);
+
+	return !!data->mConnect;
+}
+
+static int lt8912_audio_get_intf_id(struct platform_device *pdev)
+{
+	struct lt8912_private *data = lt8912_audio_get_data(pdev);
+
+	if (IS_ERR(data))
+		return PTR_ERR(data);
+
+	return EXT_DISPLAY_TYPE_HDMI;
+}
+
+static void lt8912_audio_teardown_done(struct platform_device *pdev)
+{
+	pr_debug("lt8912 audio teardown done\n");
+}
+
+static int lt8912_audio_ack_done(struct platform_device *pdev, u32 ack)
+{
+	pr_debug("lt8912 audio ack 0x%x\n", ack);
+	return 0;
+}
+
+static int lt8912_audio_codec_ready(struct platform_device *pdev)
+{
+	struct lt8912_private *data = lt8912_audio_get_data(pdev);
+
+	if (IS_ERR(data))
+		return PTR_ERR(data);
+
+	pr_debug("lt8912 audio codec ready\n");
+	return 0;
+}
+
+static int lt8912_audio_notify(struct lt8912_private *data, bool connected)
+{
+	struct msm_ext_disp_init_data *ext = &data->ext_audio_data;
+	enum msm_ext_disp_cable_state state;
+	int rc;
+
+	if (!data->ext_audio_registered || !data->ext_pdev ||
+	    !ext->intf_ops.audio_notify || !ext->intf_ops.audio_config)
+		return 0;
+
+	if (data->ext_audio_connected == connected)
+		return 0;
+
+	state = connected ? EXT_DISPLAY_CABLE_CONNECT
+			  : EXT_DISPLAY_CABLE_DISCONNECT;
+
+	if (connected) {
+		rc = ext->intf_ops.audio_config(data->ext_pdev,
+				EXT_DISPLAY_TYPE_HDMI, state);
+		if (rc) {
+			pr_err("lt8912 audio_config(connect) failed: %d\n", rc);
+			return rc;
+		}
+	}
+
+	rc = ext->intf_ops.audio_notify(data->ext_pdev,
+			EXT_DISPLAY_TYPE_HDMI, state);
+	if (rc && rc != -EEXIST) {
+		pr_err("lt8912 audio_notify(%d) failed: %d\n", connected, rc);
+		if (connected)
+			ext->intf_ops.audio_config(data->ext_pdev,
+					EXT_DISPLAY_TYPE_HDMI,
+					EXT_DISPLAY_CABLE_DISCONNECT);
+		return rc;
+	}
+
+	if (!connected)
+		ext->intf_ops.audio_config(data->ext_pdev,
+				EXT_DISPLAY_TYPE_HDMI, state);
+
+	data->ext_audio_connected = connected;
+	return 0;
+}
+
+static int lt8912_init_ext_disp(struct lt8912_private *data)
+{
+	struct device_node *pd;
+	struct msm_ext_disp_init_data *ext = &data->ext_audio_data;
+	struct msm_ext_disp_audio_codec_ops *ops = &ext->codec_ops;
+	struct platform_device *audio_pdev;
+	int rc;
+
+	pd = of_parse_phandle(data->lt8912_client->dev.of_node,
+			"qcom,ext-disp", 0);
+	if (!pd) {
+		pr_err("lt8912: qcom,ext-disp phandle missing in DT\n");
+		return -ENODEV;
+	}
+
+	data->ext_pdev = of_find_device_by_node(pd);
+	of_node_put(pd);
+	if (!data->ext_pdev) {
+		pr_err("lt8912: qcom,ext-disp pdev not found\n");
+		return -ENODEV;
+	}
+
+	audio_pdev = platform_device_register_simple("lt8912-ext-audio",
+			-1, NULL, 0);
+	if (IS_ERR(audio_pdev)) {
+		rc = PTR_ERR(audio_pdev);
+		pr_err("lt8912: failed to alloc audio pdev: %d\n", rc);
+		return rc;
+	}
+
+	data->audio_pdev = audio_pdev;
+	data->ext_audio_disp_data.intf_pdev = audio_pdev;
+	data->ext_audio_disp_data.intf_data = data;
+	platform_set_drvdata(audio_pdev, &data->ext_audio_disp_data);
+
+	ext->type     = EXT_DISPLAY_TYPE_HDMI;
+	ext->pdev     = audio_pdev;
+	ext->intf_data = data;
+
+	ops->audio_info_setup   = lt8912_audio_info_setup;
+	ops->get_audio_edid_blk = lt8912_audio_get_edid_blk;
+	ops->cable_status       = lt8912_audio_cable_status;
+	ops->get_intf_id        = lt8912_audio_get_intf_id;
+	ops->teardown_done      = lt8912_audio_teardown_done;
+	ops->acknowledge        = lt8912_audio_ack_done;
+	ops->ready              = lt8912_audio_codec_ready;
+
+	rc = msm_ext_disp_register_intf(data->ext_pdev, ext);
+	if (rc) {
+		pr_err("lt8912: msm_ext_disp_register_intf failed: %d\n", rc);
+		platform_device_unregister(audio_pdev);
+		data->audio_pdev = NULL;
+		data->ext_pdev = NULL;
+		return rc;
+	}
+
+	data->ext_audio_registered = true;
+	pr_info("lt8912: registered HDMI interface with msm-ext-disp\n");
+
+	if (data->mConnect)
+		lt8912_audio_notify(data, true);
+
+	return 0;
+}
+
+static void lt8912_deinit_ext_disp(struct lt8912_private *data)
+{
+	if (!data->ext_audio_registered)
+		return;
+
+	lt8912_audio_notify(data, false);
+
+	if (data->audio_pdev)
+		platform_device_unregister(data->audio_pdev);
+
+	data->audio_pdev = NULL;
+	data->ext_pdev = NULL;
+	data->ext_audio_registered = false;
+}
+
+static struct lt8912_private *hdmi_audio_data;
+
+static ssize_t hdmi_audio_name_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%s\n", "hdmi_audio");
+}
+
+static ssize_t hdmi_audio_state_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	int state = hdmi_audio_data ? hdmi_audio_data->hdmi_audio_state : 0;
+
+	return scnprintf(buf, PAGE_SIZE, "%d\n", state);
+}
+
+static struct kobj_attribute hdmi_audio_name_attr =
+	__ATTR(name,  0444, hdmi_audio_name_show,  NULL);
+static struct kobj_attribute hdmi_audio_state_attr =
+	__ATTR(state, 0444, hdmi_audio_state_show, NULL);
+
+static struct attribute *hdmi_audio_attrs[] = {
+	&hdmi_audio_name_attr.attr,
+	&hdmi_audio_state_attr.attr,
+	NULL,
+};
+
+static const struct attribute_group hdmi_audio_attr_group = {
+	.attrs = hdmi_audio_attrs,
+};
+
+static int lt8912_hdmi_audio_switch_register(struct lt8912_private *data)
+{
+	struct kobject *parent = extcon_get_compat_switch_kobj();
+	struct kobject *kobj;
+	int ret;
+
+	if (!parent) {
+		pr_warn("lt8912: /sys/class/switch parent kobject not available; "
+			"AOSP HDMI audio detection will fall back to /sys/class/extcon\n");
+		return -ENOENT;
+	}
+
+	kobj = kobject_create_and_add("hdmi_audio", parent);
+	if (!kobj) {
+		pr_err("lt8912: kobject_create_and_add(hdmi_audio) failed\n");
+		return -ENOMEM;
+	}
+
+	ret = sysfs_create_group(kobj, &hdmi_audio_attr_group);
+	if (ret) {
+		pr_err("lt8912: sysfs_create_group(hdmi_audio) failed: %d\n", ret);
+		kobject_put(kobj);
+		return ret;
+	}
+
+	data->hdmi_audio_kobj = kobj;
+	data->hdmi_audio_state = 0;
+	hdmi_audio_data = data;
+	return 0;
+}
+
+static void lt8912_hdmi_audio_switch_unregister(struct lt8912_private *data)
+{
+	if (!data->hdmi_audio_kobj)
+		return;
+
+	sysfs_remove_group(data->hdmi_audio_kobj, &hdmi_audio_attr_group);
+	kobject_put(data->hdmi_audio_kobj);
+	data->hdmi_audio_kobj = NULL;
+	if (hdmi_audio_data == data)
+		hdmi_audio_data = NULL;
+}
+
+static void lt8912_hdmi_audio_switch_set(struct lt8912_private *data, int state)
+{
+	char name_env[]  = "SWITCH_NAME=hdmi_audio";
+	char state_env[32];
+	char *envp[3] = { name_env, state_env, NULL };
+
+	if (!data->hdmi_audio_kobj || data->hdmi_audio_state == state)
+		return;
+
+	data->hdmi_audio_state = state;
+	sysfs_notify(data->hdmi_audio_kobj, NULL, "state");
+	snprintf(state_env, sizeof(state_env), "SWITCH_STATE=%d", state);
+	kobject_uevent_env(data->hdmi_audio_kobj, KOBJ_CHANGE, envp);
+}
 
 static const unsigned int lt8912_extcon_cable[] = {
 	EXTCON_DISP_HDMI,
@@ -1423,6 +1746,9 @@ static int lt8912_i2c_probe(struct i2c_client *client,
 	schedule_delayed_work(&data->hpd_work, msecs_to_jiffies(5000));
 #endif
 	lt8912_regist_extcon(data);
+	lt8912_init_ext_disp(data);
+	if (!lt8912_hdmi_audio_switch_register(data))
+		lt8912_hdmi_audio_switch_set(data, !!data->mConnect);
 
 	//lt8912_init(data);
 	//g_reinit = 1;
@@ -1456,6 +1782,9 @@ static int lt8912_i2c_remove(struct i2c_client *client)
 
 	if (!data)
 		return -1;
+
+	lt8912_deinit_ext_disp(data);
+	lt8912_hdmi_audio_switch_unregister(data);
 
 #ifdef LT8912_HDP_IRQ
 	disable_irq(data->hpd_irq);
