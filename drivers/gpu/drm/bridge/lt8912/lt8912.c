@@ -48,7 +48,7 @@
 #include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/jiffies.h>
-#include <linux/switch.h>
+#include <linux/extcon.h>
 #include <drm/drm_connector.h>
 #include <drm/drmP.h>
 
@@ -78,7 +78,7 @@
  */
 struct lt8912_private {
 	struct i2c_client *lt8912_client;
-	struct switch_dev switch_dev;
+	struct extcon_dev *audio_extcon;
 	struct regmap *regmap;
 	int pwren_gpio;
 	int reset_gpio;
@@ -1110,8 +1110,8 @@ static void lt8912_hpd_work_fn(struct work_struct *work)
 	{
 		cnt = 0;
 		data->mConnect = (data->mConnect == 0 ? 1 : 0);
-		pr_err("tianyx, lt8912, switch_set_state(&data->switch_dev, %d);\n", data->mConnect);
-		switch_set_state(&data->switch_dev, data->mConnect);
+		pr_err("tianyx, lt8912, extcon_set_state_sync(HDMI, %d);\n", data->mConnect);
+		extcon_set_state_sync(data->audio_extcon, EXTCON_DISP_HDMI, !!data->mConnect);
 	}
 }
 #else
@@ -1133,7 +1133,7 @@ static void lt8912_hpd_work_fn(struct work_struct *work)
 			default_display_connected = HDMI_PULL_OUT;
 			printk("<3>""oncethings hdmi driver connected:%d",default_display_connected);
 		}
-		switch_set_state(&data->switch_dev, !!data->mConnect);	
+		extcon_set_state_sync(data->audio_extcon, EXTCON_DISP_HDMI, !!data->mConnect);
 		lt8912_send_hpd_event(data);
     }
 
@@ -1171,7 +1171,7 @@ static int lt8912_suspend(struct lt8912_private *pdata)
 	if(gpio_is_valid(pdata->hdmidet_gpio)){
 		pdata->mConnect = gpio_get_value(pdata->hdmidet_gpio);
 	}
-	switch_set_state(&pdata->switch_dev, !!pdata->mConnect);
+	extcon_set_state_sync(pdata->audio_extcon, EXTCON_DISP_HDMI, !!pdata->mConnect);
 
 	// power off
 	lt8912_power_set(pdata, false);
@@ -1237,29 +1237,36 @@ static int lt8912_fb_notifier_cb(struct notifier_block *self,
 }
 #endif
 
-static int lt8912_regist_switch(struct lt8912_private *data)
+static const unsigned int lt8912_extcon_cable[] = {
+	EXTCON_DISP_HDMI,
+	EXTCON_NONE,
+};
+
+static int lt8912_regist_extcon(struct lt8912_private *data)
 {
-	struct switch_dev *switch_dev = &data->switch_dev;
-	int ret = 0;
+	struct extcon_dev *edev;
+	int ret;
 
-	switch_dev->name = "hdmi_audio";
-	//	switch_data->gpio = pdata->gpio;
-	//	switch_data->name_on = pdata->name_on;
-	//	switch_data->name_off = pdata->name_off;
-	//	switch_data->state_on = pdata->state_on;
-	//	switch_data->state_off = pdata->state_off;
-	//	switch_data->sdev.print_state = switch_gpio_print_state;
+	edev = devm_extcon_dev_allocate(&data->lt8912_client->dev,
+					lt8912_extcon_cable);
+	if (IS_ERR(edev)) {
+		pr_err("lt8912: extcon_dev_allocate failed\n");
+		return PTR_ERR(edev);
+	}
+															
 
-	ret = switch_dev_register(switch_dev);
-	if (ret < 0)
-	{
-		pr_err("switch_dev_register failed\n");
+	ret = devm_extcon_dev_register(&data->lt8912_client->dev, edev);
+	if (ret) {
+  
+		pr_err("lt8912: extcon_dev_register failed (%d)\n", ret);
 		return ret;
 	}
 
-	pr_debug("lt8912_regist_switch success\n");
+	data->audio_extcon = edev;
 
-	return ret;
+	pr_debug("lt8912_regist_extcon success\n");
+
+	return 0;
 }
 
 static int lt8912_read_device_rev(struct lt8912_private *pdata)
@@ -1415,7 +1422,7 @@ static int lt8912_i2c_probe(struct i2c_client *client,
 	INIT_DELAYED_WORK(&data->hpd_work, lt8912_hpd_work_fn);
 	schedule_delayed_work(&data->hpd_work, msecs_to_jiffies(5000));
 #endif
-	lt8912_regist_switch(data);
+	lt8912_regist_extcon(data);
 
 	//lt8912_init(data);
 	//g_reinit = 1;
@@ -1450,7 +1457,6 @@ static int lt8912_i2c_remove(struct i2c_client *client)
 	if (!data)
 		return -1;
 
-	switch_dev_unregister(&data->switch_dev);
 #ifdef LT8912_HDP_IRQ
 	disable_irq(data->hpd_irq);
 	free_irq(data->hpd_irq, data);
