@@ -48,6 +48,10 @@
 	};
 };
 
+&sde_dsi1 {
+	qcom,dsi-default-panel = <&dsi_lt8912_1080_dsi1_video>;
+};
+
 &qupv3_se5_i2c {
 	synaptics@70 {
 		synaptics,swap-axes;
