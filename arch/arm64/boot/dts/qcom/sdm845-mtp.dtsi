@@ -107,29 +107,43 @@
 	quec_gpios {
 		compatible = "quec,gpios";
 		pinctrl-names = "default";
-		pinctrl-0 = <&quec_input_gpios_init
-						&quec_output_gpios_init>;
-		gpios = <&tlmm 0 0>,
-			<&tlmm 3 0>,
-			<&tlmm 7 1>,
-			<&tlmm 22 0>,
-			<&tlmm 24 0>,
+		pinctrl-0 = <&quec_output_gpios_init>;
+		gpios = <&tlmm 7 1>,
 			<&tlmm 25 1>,
-			<&tlmm 26 0>,
-			<&tlmm 40 0>,
-			<&tlmm 41 0>,
-			<&tlmm 49 0>,
-			<&tlmm 52 0>,
 			<&tlmm 87 1>,
-			<&tlmm 91 0>,
-			<&tlmm 92 0>,
-			<&tlmm 95 0>,
-			<&tlmm 96 0>,
-			<&tlmm 116 0>,
-			<&tlmm 122 0>,
-			<&tlmm 124 0>,
-			<&tlmm 128 0>,
 			<&tlmm 129 1>;
+	};
+
+	gamepad: gamepad {
+		compatible = "ayntec,odin-gamepad";
+		status = "okay";
+
+		ayn,default-layout = "xbox";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&quec_input_gpios_init>;
+
+		dpad-up-gpios     = <&tlmm 124 GPIO_ACTIVE_LOW>;
+		dpad-down-gpios   = <&tlmm 128 GPIO_ACTIVE_LOW>;
+		dpad-left-gpios   = <&tlmm  52 GPIO_ACTIVE_LOW>;
+		dpad-right-gpios  = <&tlmm 122 GPIO_ACTIVE_LOW>;
+
+		west-btn-gpios    = <&tlmm  41 GPIO_ACTIVE_LOW>;
+		north-btn-gpios   = <&tlmm  92 GPIO_ACTIVE_LOW>;
+		south-btn-gpios   = <&tlmm  95 GPIO_ACTIVE_LOW>;
+		east-btn-gpios    = <&tlmm  96 GPIO_ACTIVE_LOW>;
+
+		l1-btn-gpios      = <&tlmm  26 GPIO_ACTIVE_LOW>;
+		r1-btn-gpios      = <&tlmm  91 GPIO_ACTIVE_LOW>;
+
+		select-btn-gpios  = <&tlmm   0 GPIO_ACTIVE_LOW>;
+		start-btn-gpios   = <&tlmm   3 GPIO_ACTIVE_LOW>;
+		thumb-l-btn-gpios = <&tlmm  40 GPIO_ACTIVE_LOW>;
+		thumb-r-btn-gpios = <&tlmm  22 GPIO_ACTIVE_LOW>;
+		home-btn-gpios    = <&tlmm  49 GPIO_ACTIVE_LOW>;
+
+		rear-l-btn-gpios  = <&tlmm 116 GPIO_ACTIVE_LOW>;
+		rear-r-btn-gpios  = <&tlmm  24 GPIO_ACTIVE_LOW>;
 	};
 };
 
