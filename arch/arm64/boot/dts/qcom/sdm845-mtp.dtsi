@@ -104,14 +104,34 @@
 		};
 	};
 
-	quec_gpios {
-		compatible = "quec,gpios";
+	gpio_leds: gpio-leds {
+		compatible = "gpio-leds";
 		pinctrl-names = "default";
 		pinctrl-0 = <&quec_output_gpios_init>;
-		gpios = <&tlmm 7 1>,
-			<&tlmm 25 1>,
-			<&tlmm 87 1>,
-			<&tlmm 129 1>;
+
+		left_handle {
+			label = "left:strip";
+			gpios = <&tlmm 129 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		right_handle {
+			label = "right:strip";
+			gpios = <&tlmm 87 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		left_joystick {
+			label = "left:stick";
+			gpios = <&tlmm 25 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		right_joystick {
+			label = "right:stick";
+			gpios = <&tlmm 7 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
 	};
 
 	gamepad: gamepad {
