@@ -13,6 +13,17 @@
 
 static const struct virtual_sensor_data qti_virtual_sensors[] = {
 	{
+		.virt_zone_name = "fan-virt-max-step",
+		.num_sensors = 6,
+		.sensor_names = {"gpu0-usr",
+				"gpu1-usr",
+				"cpu0-gold-usr",
+				"cpu1-gold-usr",
+				"cpu2-gold-usr",
+				"cpu3-gold-usr"},
+		.logic = VIRT_MAXIMUM,
+	},
+	{
 		.virt_zone_name = "gpu-virt-max-step",
 		.num_sensors = 2,
 		.sensor_names = {"gpu0-usr",
