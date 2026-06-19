@@ -52,17 +52,22 @@
 };
 
 &soc {
-	gpio5_pwm {
-		compatible = "gpio5-pwm";
-		pwms = <&pmi8998_pwm_2 0 0>;
-		gpio5-pwm-state = <0>;
-		gpio5-pwm-duty-ns = <10000>;
-		gpio5-pwm-period-ns = <50000>;
-		qcom,fan-en-gpio = <&tlmm 44 0>;
-		qcom,fan-fg-gpio = <&tlmm 30 0x2004>;
+	fan_en_vreg: fan_en_regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "fan_en";
+		gpio = <&tlmm 44 0>;
+		enable-active-high;
+		regulator-boot-off;
+	};
+
+	pwm_fan: pwm-fan {
+		compatible = "pwm-fan";
+		pwms = <&pmi8998_pwm_2 0 50000>;
+		fan-supply = <&fan_en_vreg>;
+		#cooling-cells = <2>;
+		cooling-levels = <0 51 77 102 128 153 179 204 230 255>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pwm_out_default>;
-		pinctrl-1 = <&fg_int_default>;
 	};
 
 	gpio_keys {
@@ -753,6 +758,98 @@
 				temperature = <125000>;
 				hysteresis = <10000>;
 				type = "passive";
+			};
+		};
+	};
+
+	fan-virt-max-step {
+		polling-delay-passive = <100>;
+		polling-delay = <1000>;
+		thermal-governor = "step_wise";
+		wake-capable-sensor;
+		trips {
+			fan_trip0: fan-trip0 {
+				temperature = <55000>;
+				hysteresis = <5000>;
+				type = "active";
+			};
+			fan_trip1: fan-trip1 {
+				temperature = <59000>;
+				hysteresis = <5000>;
+				type = "active";
+			};
+			fan_trip2: fan-trip2 {
+				temperature = <63000>;
+				hysteresis = <5000>;
+				type = "active";
+			};
+			fan_trip3: fan-trip3 {
+				temperature = <67000>;
+				hysteresis = <5000>;
+				type = "active";
+			};
+			fan_trip4: fan-trip4 {
+				temperature = <71000>;
+				hysteresis = <5000>;
+				type = "active";
+			};
+			fan_trip5: fan-trip5 {
+				temperature = <75000>;
+				hysteresis = <5000>;
+				type = "active";
+			};
+			fan_trip6: fan-trip6 {
+				temperature = <79000>;
+				hysteresis = <5000>;
+				type = "active";
+			};
+			fan_trip7: fan-trip7 {
+				temperature = <83000>;
+				hysteresis = <5000>;
+				type = "active";
+			};
+			fan_trip8: fan-trip8 {
+				temperature = <87000>;
+				hysteresis = <5000>;
+				type = "active";
+			};
+		};
+		cooling-maps {
+			fan_map0 {
+				trip = <&fan_trip0>;
+				cooling-device = <&pwm_fan 1 1>;
+			};
+			fan_map1 {
+				trip = <&fan_trip1>;
+				cooling-device = <&pwm_fan 2 2>;
+			};
+			fan_map2 {
+				trip = <&fan_trip2>;
+				cooling-device = <&pwm_fan 3 3>;
+			};
+			fan_map3 {
+				trip = <&fan_trip3>;
+				cooling-device = <&pwm_fan 4 4>;
+			};
+			fan_map4 {
+				trip = <&fan_trip4>;
+				cooling-device = <&pwm_fan 5 5>;
+			};
+			fan_map5 {
+				trip = <&fan_trip5>;
+				cooling-device = <&pwm_fan 6 6>;
+			};
+			fan_map6 {
+				trip = <&fan_trip6>;
+				cooling-device = <&pwm_fan 7 7>;
+			};
+			fan_map7 {
+				trip = <&fan_trip7>;
+				cooling-device = <&pwm_fan 8 8>;
+			};
+			fan_map8 {
+				trip = <&fan_trip8>;
+				cooling-device = <&pwm_fan 9 9>;
 			};
 		};
 	};
