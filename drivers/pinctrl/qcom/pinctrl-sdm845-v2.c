@@ -1161,7 +1161,7 @@ static const char * const wlan1_adc1_groups[] = {
 	"gpio8",
 };
 static const char * const atest_usb13_groups[] = {
-	"gpio8",
+	"gpio8", "gpio99",
 };
 static const char * const ddr_pxi1_groups[] = {
 	"gpio8", "gpio9",
@@ -1587,7 +1587,7 @@ static const struct msm_pingroup sdm845_groups[] = {
 			NA, NA),
 	[98] = PINGROUP(98, NORTH, NA, mdp_vsync, ldo_update, NA, NA, NA, NA,
 			NA, NA, NA),
-	[99] = PINGROUP(99, NORTH, phase_flag14, NA, NA, NA, NA, NA, NA, NA,
+	[99] = PINGROUP(99, NORTH, phase_flag14, NA, NA, NA, NA, NA, NA, atest_usb13,
 			NA, NA),
 	[100] = PINGROUP(100, NORTH, phase_flag15, NA, NA, NA, NA, NA, NA, NA,
 			 NA, NA),

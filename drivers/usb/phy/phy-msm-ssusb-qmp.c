@@ -242,6 +242,8 @@ static int msm_ssusb_qmp_ldo_enable(struct msm_ssphy_qmp *phy, int on)
 
 	phy->power_enabled = on;
 
+	msleep(3);//wufei fix: Modified probability not to recognize DP when VBUS is powered on
+
 	min = on ? 1 : 0; /* low or none? */
 
 	if (!on)

@@ -326,7 +326,7 @@ static int dp_usbpd_get_ss_lanes(struct dp_usbpd_private *pd)
 		while (timeout) {
 			rc = pd->svid_handler.request_usb_ss_lane(
 					pd->pd, &pd->svid_handler);
-			if (rc != -EBUSY)
+			if (rc == 0)
 				break;
 
 			DP_WARN("USB busy, retry\n");

@@ -42,7 +42,7 @@ static struct smb_params v1_params = {
 		.name	= "usb input current limit",
 		.reg	= USBIN_CURRENT_LIMIT_CFG_REG,
 		.min_u	= 0,
-		.max_u	= 4800000,
+		.max_u	= 5000000,
 		.step_u	= 25000,
 	},
 	.icl_stat		= {
@@ -247,7 +247,7 @@ ATTRIBUTE_GROUPS(smb2);
 
 
 #define MICRO_1P5A		1500000
-#define MICRO_P1A		100000
+#define MICRO_P1A		1000000
 #define OTG_DEFAULT_DEGLITCH_TIME_MS	50
 #define MIN_WD_BARK_TIME		16
 #define DEFAULT_WD_BARK_TIME		64
@@ -303,7 +303,7 @@ static int smb2_parse_dt(struct smb2 *chip)
 	rc = of_property_read_u32(node,
 				"qcom,otg-cl-ua", &chg->otg_cl_ua);
 	if (rc < 0)
-		chg->otg_cl_ua = MICRO_1P5A;
+		chg->otg_cl_ua = MICRO_P1A;
 
 	rc = of_property_read_u32(node,
 				"qcom,dc-icl-ua", &chip->dt.dc_icl_ua);
@@ -1675,6 +1675,8 @@ static int smb2_init_hw(struct smb2 *chip)
 	}
 
 	/* set OTG current limit */
+	pr_err("wufei:chg->otg_cl_ua=%d\n", chg->otg_cl_ua);
+	pr_err("wufei:chg->param.otg_cl.min_u=%d\n", chg->param.otg_cl.min_u);
 	rc = smblib_set_charge_param(chg, &chg->param.otg_cl,
 				(chg->wa_flags & OTG_WA) ?
 				chg->param.otg_cl.min_u : chg->otg_cl_ua);

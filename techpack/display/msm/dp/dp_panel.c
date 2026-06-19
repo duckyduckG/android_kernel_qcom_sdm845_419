@@ -1852,8 +1852,8 @@ static int dp_panel_read_dpcd(struct dp_panel *dp_panel, bool multi_func)
 		goto end;
 	}
 
-	print_hex_dump(KERN_DEBUG, "[drm-dp] SINK DPCD: ",
-		DUMP_PREFIX_NONE, 8, 1, dp_panel->dpcd, rlen, false);
+	// print_hex_dump(KERN_DEBUG, "[drm-dp] SINK DPCD: ",
+	// 	DUMP_PREFIX_NONE, 8, 1, dp_panel->dpcd, rlen, false);
 
 	rlen = drm_dp_dpcd_read(panel->aux->drm_aux,
 		DPRX_FEATURE_ENUMERATION_LIST, &rx_feature, 1);
@@ -2138,7 +2138,7 @@ static int dp_panel_read_sink_caps(struct dp_panel *dp_panel,
 		dp_panel->link_info.num_lanes) ||
 		((drm_dp_link_rate_to_bw_code(dp_panel->link_info.rate)) >
 		dp_panel->max_bw_code)) {
-		if ((rc == -ETIMEDOUT) || (rc == -ENODEV)) {
+		if ((rc == -ETIMEDOUT) || (rc == -ENODEV) || (rc == -EINVAL)) {
 			DP_ERR("DPCD read failed, return early\n");
 			goto end;
 		}
@@ -2152,6 +2152,11 @@ static int dp_panel_read_sink_caps(struct dp_panel *dp_panel,
 	if (downstream_ports) {
 		rlen = drm_dp_dpcd_read(panel->aux->drm_aux, DP_SINK_COUNT,
 				&count, count_len);
+		if (rlen < 0 ) {
+			pr_err("%s:drm_dp_dpcd_read failed, rlen=%d\n", __func__, rlen);
+			rc = rlen;
+			goto end;
+		}
 		if (rlen == count_len) {
 			count = DP_GET_SINK_COUNT(count);
 			if (!count) {

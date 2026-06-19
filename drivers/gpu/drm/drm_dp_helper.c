@@ -258,6 +258,11 @@ static int drm_dp_dpcd_access(struct drm_dp_aux *aux, u8 request,
 		 */
 		if (!err)
 			err = ret;
+//wufei: If aux return EINVAL, the system will stall. Must break.
+		if(ret == -EINVAL){
+			if(retry >= 3)
+				break;
+		}
 	}
 
 	DRM_DEBUG_KMS("Too many retries, giving up. First error: %d\n", err);

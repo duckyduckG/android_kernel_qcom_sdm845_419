@@ -2000,7 +2000,8 @@ static void __mdss_dsi_calc_dfps_delay(struct mdss_panel_data *pdata)
 			((pd->timing[1] >> 1) + 1) +
 			((pd->timing[4] >> 1) + 1)) / hr_bit_to_esc_ratio);
 
-	if (pinfo->mipi.force_clk_lane_hs)
+	//if (pinfo->mipi.force_clk_lane_hs)
+	if(1)
 		pipe_delay2 = (6 / byte_to_esc_ratio) +
 			((((pd->timing[1] >> 1) + 1) +
 			((pd->timing[4] >> 1) + 1)) / hr_bit_to_esc_ratio);

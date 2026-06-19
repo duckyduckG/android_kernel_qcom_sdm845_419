@@ -1306,6 +1306,8 @@ source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
 
 source "drivers/input/touchscreen/synaptics_tcm/Kconfig"
 
+source "drivers/input/touchscreen/synaptics_dsx_td4322/Kconfig"
+
 source "drivers/input/touchscreen/focaltech_touch/Kconfig"
 
 source "drivers/input/touchscreen/nt36xxx/Kconfig"

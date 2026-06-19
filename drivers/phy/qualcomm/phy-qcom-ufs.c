@@ -767,6 +767,7 @@ int ufs_qcom_phy_power_on(struct phy *generic_phy)
 	struct ufs_qcom_phy *phy_common = get_ufs_qcom_phy(generic_phy);
 	struct device *dev = phy_common->dev;
 	int err;
+	int ret = 0;
 
 	if (phy_common->is_powered_on)
 		return 0;
@@ -778,11 +779,19 @@ int ufs_qcom_phy_power_on(struct phy *generic_phy)
 		goto out;
 	}
 
-	err = ufs_qcom_phy_enable_vreg(dev, &phy_common->vdda_phy);
-	if (err) {
-		dev_err(dev, "%s enable vdda_phy failed, err=%d\n",
-			__func__, err);
-		goto out;
+	ret = ufs_qcom_phy_cfg_vreg(dev, &phy_common->vdda_phy, true);
+	if (ret) {
+		dev_err(dev, "%s: ufs_qcom_phy_cfg_vreg() failed, err=%d\n",
+			__func__, ret);
+	}
+	ret = regulator_is_enabled(phy_common->vdda_phy.reg);
+	if(ret != 1){
+		err = ufs_qcom_phy_enable_vreg(dev, &phy_common->vdda_phy);
+		if (err) {
+			dev_err(dev, "%s enable vdda_phy failed, err=%d\n",
+				__func__, err);
+			goto out;
+		}
 	}
 
 	phy_common->phy_spec_ops->power_control(phy_common, true);

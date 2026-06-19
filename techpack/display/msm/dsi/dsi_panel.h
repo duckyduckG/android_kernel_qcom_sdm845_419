@@ -146,6 +146,9 @@ struct dsi_panel_reset_config {
 
 	int reset_gpio;
 	int disp_en_gpio;
+	int mipi_mode_sel;
+	int mipi_mode_oe;
+	int mipi_vdd;
 	int lcd_mode_sel_gpio;
 	u32 mode_sel_state;
 };

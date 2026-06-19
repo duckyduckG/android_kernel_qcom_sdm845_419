@@ -23,6 +23,10 @@
 
 #include "sde_dbg.h"
 
+#ifdef CONFIG_DRM_I2C_LT8912
+#include "../../../../drivers/gpu/drm/bridge/lt8912/lt8912.h"
+#endif
+
 #define DSI_CTRL_DEFAULT_LABEL "MDSS DSI CTRL"
 
 #define DSI_CTRL_TX_TO_MS     200

@@ -125,6 +125,9 @@ static char *dp_display_state_name(enum dp_display_states state)
 
 static struct dp_display *g_dp_display;
 #define HPD_STRING_SIZE 30
+#define DP_PULL_OUT	0
+#define DP_PULL_IN	1
+#define DP_UNUSED	2
 
 struct dp_hdcp_dev {
 	void *fd;
@@ -736,6 +739,9 @@ static void dp_display_send_hpd_event(struct dp_display_private *dp)
 	}
 }
 
+int dp_display_connected = DP_UNUSED;
+EXPORT_SYMBOL(dp_display_connected);
+extern int dp_state;
 static int dp_display_send_hpd_notification(struct dp_display_private *dp)
 {
 	int ret = 0;
@@ -766,6 +772,15 @@ static int dp_display_send_hpd_notification(struct dp_display_private *dp)
 		dp->dp_display.is_sst_connected = hpd;
 	else
 		dp->dp_display.is_sst_connected = false;
+
+	if (dp->dp_display.is_sst_connected){/*dp->dp_display.is_connected */
+		dp_display_connected = DP_PULL_IN;
+		printk("<3>""oncethings dp driver connect:%d",dp_display_connected);
+	}
+	else{
+		dp_display_connected = DP_PULL_OUT;
+		printk("<3>""oncethings dp driver connect:%d",dp_display_connected);
+	}
 
 	reinit_completion(&dp->notification_comp);
 	dp_display_send_hpd_event(dp);
@@ -1017,8 +1032,9 @@ static int dp_display_process_hpd_high(struct dp_display_private *dp)
 	/*
 	 * ETIMEDOUT --> cable may have been removed
 	 * ENOTCONN --> no downstream device connected
+	 * EINVAL --> invalid argument
 	 */
-	if (rc == -ETIMEDOUT || rc == -ENOTCONN) {
+	if (rc == -ETIMEDOUT || rc == -ENOTCONN || rc == -EINVAL) {
 		dp_display_state_remove(DP_STATE_CONNECTED);
 		goto end;
 	}
@@ -1349,6 +1365,15 @@ static void dp_display_attention_work(struct work_struct *work)
 	struct dp_display_private *dp = container_of(work,
 			struct dp_display_private, attention_work);
 	int rc = 0;
+ 
+		// if (!dp->core_initialized)
+		// 	return;
+	if (dp_display_state_is(DP_STATE_INITIALIZED)) {
+		dp_display_state_log("[already initialized]");
+		return;
+	}
+
+	dp->link->process_request(dp->link);
 
 	SDE_EVT32_EXTERNAL(SDE_EVTLOG_FUNC_ENTRY, dp->state);
 	mutex_lock(&dp->session_lock);
@@ -1453,7 +1478,7 @@ mst_attention:
 end:
 	SDE_EVT32_EXTERNAL(SDE_EVTLOG_FUNC_EXIT, dp->state);
 }
-
+//
 static int dp_display_usbpd_attention_cb(struct device *dev)
 {
 	struct dp_display_private *dp;
