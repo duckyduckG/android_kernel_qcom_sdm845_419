@@ -342,6 +342,7 @@ struct odin_gamepad {
 
 	bool layout_xbox;
 	bool digital_triggers;
+	bool recovery_mode;	/* block ADC polling — see odin_adc_thread */
 	u32 ignore_mask;
 	u32 m0_code;
 	u32 m1_code;
@@ -564,6 +565,12 @@ static int odin_gpio_thread(void *arg)
 	bool any;
 
 	while (!kthread_should_stop()) {
+		/* Skip VADC polling in recovery — frees PMIC bandwidth for touch. */
+		if (odin->recovery_mode) {
+			usleep_range(100000, 110000);
+			continue;
+		}
+
 		if (atomic_read(&odin_screen_on))
 			usleep_range(ODIN_GPIO_POLL_US,
 				     ODIN_GPIO_POLL_US + 100);
@@ -1506,6 +1513,31 @@ static ssize_t left_stick_axis_swap_store(struct device *dev,
 static DEVICE_ATTR(left_stick_axis_swap, 0644, NULL,
 		   left_stick_axis_swap_store);
 
+/* Gate VADC polling in recovery so touch PMIC path isn't starved. */
+static ssize_t recovery_mode_store(struct device *dev,
+				   struct device_attribute *attr,
+				   const char *buf, size_t count)
+{
+	struct odin_gamepad *odin = dev_get_drvdata(dev);
+	unsigned long v;
+	int rc;
+
+	rc = kstrtoul(buf, 10, &v);
+	if (rc)
+		return rc;
+	odin->recovery_mode = !!v;
+	return count;
+}
+
+static ssize_t recovery_mode_show(struct device *dev,
+				  struct device_attribute *attr, char *buf)
+{
+	struct odin_gamepad *odin = dev_get_drvdata(dev);
+
+	return scnprintf(buf, PAGE_SIZE, "%d", odin->recovery_mode);
+}
+static DEVICE_ATTR_RW(recovery_mode);
+
 static struct attribute *odin_class_attrs[] = {
 	&dev_attr_calibration.attr,
 	&dev_attr_raw.attr,
@@ -1517,6 +1549,7 @@ static struct attribute *odin_class_attrs[] = {
 	&dev_attr_m0_function.attr,
 	&dev_attr_m1_function.attr,
 	&dev_attr_left_stick_axis_swap.attr,
+	&dev_attr_recovery_mode.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(odin_class);
@@ -1631,6 +1664,7 @@ static int odin_gamepad_probe(struct platform_device *pdev)
 	odin_init_radial_state(odin);
 	odin_apply_default_layout(odin, dev->of_node);
 	odin->digital_triggers = false;
+	odin->recovery_mode = false;
 	odin->ignore_mask = 0;
 	odin->m0_code = 0;
 	odin->m1_code = 0;
