@@ -153,6 +153,9 @@ module_param(trigger_deadzone, int, 0644);
 MODULE_PARM_DESC(trigger_deadzone,
 		 "Trigger deadzone in output LSB (0..1550, default 30, ~2pct of full)");
 
+/* Min output delta before re-reporting ABS_HAT2Y/HAT2X. */
+#define ODIN_TRIG_DEADBAND	5
+
 /* Re-center request: writing a new value restarts AUTO-centering. */
 static int recenter;
 module_param(recenter, int, 0644);
@@ -365,6 +368,9 @@ struct odin_gamepad {
 	/* Low-pass state for stick channels, in µV, indexed by ODIN_ADC_LY/LX/RY/RX. */
 	s64 smooth_uv[ODIN_ADC_COUNT_STICKS];
 	bool smooth_initialized;
+
+	/* Low-pass state for trigger channels, indexed by 0=L2, 1=R2. */
+	s64 trig_smooth_uv[2];
 
 	struct odin_axis_rt axis[ODIN_ADC_COUNT_STICKS];
 	struct odin_trig_rt trig[2];
@@ -873,38 +879,41 @@ static void odin_radial(struct odin_axis_rt *x_ax, struct odin_axis_rt *y_ax,
 /* L2/R2 trigger full-scale. */
 #define ODIN_TRIG_CARDINAL	1550
 
-/* Learn raw µV range (max with 5% headroom) and map to 0..cardinal.
- * Before range is learned, fall back to trigger_scale_uv divisor.
- */
-static u16 odin_scale_trigger(struct odin_trig_rt *trig, s64 phys_uv)
+/* Min raw excursion before min/max updates (kills ADC-jitter drift). */
+#define ODIN_TRIG_RANGE_DB_UV	50000	/* 50 mV */
+
+/* raw_uv drives range learning, smooth_uv drives output v. */
+static u16 odin_scale_trigger(struct odin_trig_rt *trig, s64 raw_uv,
+			       s64 smooth_uv)
 {
 	int v;
 
-	if (phys_uv < 0)
-		phys_uv = 0;
+	if (raw_uv < 0)
+		raw_uv = 0;
+	if (smooth_uv < 0)
+		smooth_uv = 0;
 
 	if (!trig->seeded) {
-		trig->min_uv = (int)phys_uv;
-		trig->max_uv = (int)phys_uv;
+		trig->min_uv = (int)raw_uv;
+		trig->max_uv = (int)raw_uv;
 		trig->seeded = true;
 	}
-	if (phys_uv < trig->min_uv)
-		trig->min_uv = (int)phys_uv;
-	if (phys_uv > trig->max_uv &&
-	    phys_uv <= (s64)trig->max_uv + trig->max_uv / 20 + 1)
-		trig->max_uv = (int)phys_uv;
+	if (raw_uv + ODIN_TRIG_RANGE_DB_UV < trig->min_uv)
+		trig->min_uv = (int)raw_uv;
+	if (raw_uv > trig->max_uv + ODIN_TRIG_RANGE_DB_UV &&
+	    raw_uv <= (s64)trig->max_uv + trig->max_uv / 20 + 1)
+		trig->max_uv = (int)raw_uv;
 
 	if (trig->max_uv - trig->min_uv < 1000) {
 		/* Range not meaningfully learned yet: fixed-divisor fallback. */
 		if (trigger_scale_uv <= 0)
 			return 0;
-		v = (int)div_s64(phys_uv, trigger_scale_uv);
+		v = (int)div_s64(smooth_uv, trigger_scale_uv);
 	} else {
-		v = (int)div_s64((phys_uv - trig->min_uv) * ODIN_TRIG_CARDINAL,
+		v = (int)div_s64((smooth_uv - trig->min_uv) * ODIN_TRIG_CARDINAL,
 				 trig->max_uv - trig->min_uv);
 	}
 	v = clamp(v, 0, ODIN_TRIG_CARDINAL);
-	/* Deadzone: collapse resting area to 0 so getevent isn't spammed. */
 	if (v < trigger_deadzone)
 		v = 0;
 	return (u16)v;
@@ -1079,10 +1088,40 @@ static int odin_adc_thread(void *arg)
 			odin->last_rx = 0;
 			odin->last_ry = 0;
 		}
-		odin->last_hat2y = odin_scale_trigger(&odin->trig[0],
-						      phys[ODIN_ADC_LT]);
-		odin->last_hat2x = odin_scale_trigger(&odin->trig[1],
-						      phys[ODIN_ADC_RT]);
+		/* EMA phys before scaling (suppresses sub-LSB jitter). */
+		{
+			s64 sample;
+			int s = stick_smooth_shift;
+			s64 mask = (1LL << s) - 1;
+
+			sample = phys[ODIN_ADC_LT];
+			if (!odin->smooth_initialized)
+				odin->trig_smooth_uv[0] = sample;
+			else if (s > 0 && s < 16)
+				odin->trig_smooth_uv[0] =
+					((odin->trig_smooth_uv[0] * mask) +
+					 sample) >> s;
+			else
+				odin->trig_smooth_uv[0] = sample;
+
+			odin->last_hat2y = odin_scale_trigger(&odin->trig[0],
+							      phys[ODIN_ADC_LT],
+							      odin->trig_smooth_uv[0]);
+
+			sample = phys[ODIN_ADC_RT];
+			if (!odin->smooth_initialized)
+				odin->trig_smooth_uv[1] = sample;
+			else if (s > 0 && s < 16)
+				odin->trig_smooth_uv[1] =
+					((odin->trig_smooth_uv[1] * mask) +
+					 sample) >> s;
+			else
+				odin->trig_smooth_uv[1] = sample;
+
+			odin->last_hat2x = odin_scale_trigger(&odin->trig[1],
+							      phys[ODIN_ADC_RT],
+							      odin->trig_smooth_uv[1]);
+		}
 
 		if (odin->input) {
 			bool any = false;
@@ -1152,7 +1191,8 @@ static int odin_adc_thread(void *arg)
 							odin->calib_hat_left.max);
 
 					if (!odin->axes_initialized ||
-					    v != odin->reported_hat2y) {
+					    abs((s32)v - (s32)odin->reported_hat2y) >=
+					    ODIN_TRIG_DEADBAND) {
 						input_report_abs(odin->input,
 								 ABS_HAT2Y, v);
 						odin->reported_hat2y = v;
@@ -1180,7 +1220,8 @@ static int odin_adc_thread(void *arg)
 							odin->calib_hat_right.max);
 
 					if (!odin->axes_initialized ||
-					    v != odin->reported_hat2x) {
+					    abs((s32)v - (s32)odin->reported_hat2x) >=
+					    ODIN_TRIG_DEADBAND) {
 						input_report_abs(odin->input,
 								 ABS_HAT2X, v);
 						odin->reported_hat2x = v;
@@ -1646,6 +1687,8 @@ static void odin_init_radial_state(struct odin_gamepad *odin)
 		odin_axis_seed(&odin->axis[i], i);
 	for (i = 0; i < 2; i++)
 		odin->trig[i].seeded = false;
+	for (i = 0; i < 2; i++)
+		odin->trig_smooth_uv[i] = 0;
 	odin->smooth_initialized = false;
 }
 
