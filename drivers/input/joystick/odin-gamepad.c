@@ -1323,18 +1323,21 @@ static ssize_t layout_store(struct device *dev, struct device_attribute *attr,
 			    const char *buf, size_t count)
 {
 	struct odin_gamepad *odin = dev_get_drvdata(dev);
-	int ret;
+	bool new_layout;
+	int ret = 0;
+
+	if (sysfs_streq("xbox", buf))
+		new_layout = true;
+	else if (sysfs_streq("nintendo", buf))
+		new_layout = false;
+	else
+		return -EINVAL;
 
 	mutex_lock(&odin->lock);
-	if (sysfs_streq("xbox", buf))
-		odin->layout_xbox = true;
-	else if (sysfs_streq("nintendo", buf))
-		odin->layout_xbox = false;
-	else {
-		mutex_unlock(&odin->lock);
-		return -EINVAL;
+	if (odin->layout_xbox != new_layout) {
+		odin->layout_xbox = new_layout;
+		ret = odin_input_recreate(odin);
 	}
-	ret = odin_input_recreate(odin);
 	mutex_unlock(&odin->lock);
 
 	if (ret)
