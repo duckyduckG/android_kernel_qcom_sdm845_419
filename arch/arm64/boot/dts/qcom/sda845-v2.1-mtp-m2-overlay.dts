@@ -10,6 +10,7 @@
  * GNU General Public License for more details.
  */
 
+
 /dts-v1/;
 /plugin/;
 
@@ -24,8 +25,36 @@
 #include "sdm845-audio-overlay.dtsi"
 
 / {
-	model = "Qualcomm Technologies, Inc. sda845 v2.1 OEM";
+	model = "Qualcomm Technologies, Inc. sda845 v2.1 MTP";
 	compatible = "qcom,sda845-mtp", "qcom,sda845", "qcom,mtp";
 	qcom,msm-id = <341 0x20001>;
-	qcom,board-id = <5 0>;
+	qcom,board-id = <8 0>;
+};
+
+&dsi_innolux_td4328_1080p_cmd {
+	qcom,mdss-dsi-display-timings {
+		timing@0{
+			qcom,mdss-dsi-panel-orientation = "180";
+			qcom,mdss-dsi-on-command = [
+				29 01 00 00 00 00 02 B0 00
+				29 01 00 00 00 00 18 C2 01 F7 80 04 68 08 09 10 00 08 30 00 00 00 00 00 00 00 02 80 00 00 00
+				29 01 00 00 00 00 02 D6 01
+				29 01 00 00 00 00 02 B0 03
+				39 01 00 00 00 00 05 2A 00 00 04 37
+				39 01 00 00 00 00 05 2B 00 00 07 7F
+				05 01 00 00 00 00 02 35 00
+				05 01 00 00 96 00 01 11
+				05 01 00 00 32 00 01 29];
+		};
+	};
+};
+
+&sde_dsi1 {
+	qcom,dsi-default-panel = <&dsi_lt8912_1080_dsi1_video>;
+};
+
+&qupv3_se5_i2c {
+	synaptics@70 {
+		synaptics,swap-axes;
+	};
 };
