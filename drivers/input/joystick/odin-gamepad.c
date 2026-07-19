@@ -156,6 +156,13 @@ MODULE_PARM_DESC(trigger_deadzone,
 /* Min output delta before re-reporting ABS_HAT2Y/HAT2X. */
 #define ODIN_TRIG_DEADBAND	5
 
+/* L2/R2 report mode: ANALOG = ABS_HAT2 only, DIGITAL = BTN_TL2 only, BOTH = both. */
+enum odin_trigger_mode {
+	ODIN_TRIG_ANALOG = 0,
+	ODIN_TRIG_DIGITAL = 1,
+	ODIN_TRIG_BOTH = 2,
+};
+
 /* Re-center request: writing a new value restarts AUTO-centering. */
 static int recenter;
 module_param(recenter, int, 0644);
@@ -344,7 +351,7 @@ struct odin_gamepad {
 	struct odin_hat_calib calib_hat_right;	/* R2 */
 
 	bool layout_xbox;
-	bool digital_triggers;
+	enum odin_trigger_mode trigger_mode;
 	bool recovery_mode;	/* block ADC polling — see odin_adc_thread */
 	u32 ignore_mask;
 	u32 m0_code;
@@ -1170,63 +1177,71 @@ static int odin_adc_thread(void *arg)
 				}
 			}
 			if (!(odin->ignore_mask & ODIN_IGN_HAT2Y)) {
-				if (odin->digital_triggers) {
-					int mid = (odin->calib_hat_left.max -
-						   odin->calib_hat_left.min) / 2;
-					bool pressed = odin->last_hat2y < mid;
+				int v = clamp_t(int, odin->last_hat2y,
+						odin->calib_hat_left.min,
+						odin->calib_hat_left.max);
+				int mid = (odin->calib_hat_left.max -
+					   odin->calib_hat_left.min) / 2;
+				bool pressed = odin->last_hat2y < mid;
+				bool want_analog = (odin->trigger_mode ==
+						    ODIN_TRIG_ANALOG ||
+						    odin->trigger_mode ==
+						    ODIN_TRIG_BOTH);
+				bool want_digital = (odin->trigger_mode ==
+						     ODIN_TRIG_DIGITAL ||
+						     odin->trigger_mode ==
+						     ODIN_TRIG_BOTH);
 
-					/* Edge-only BTN_TL2: analog branch is
-					 * dedup'd on its mapped value; mirror that.
-					 */
-					if (!odin->axes_initialized ||
-					    pressed != odin->reported_btn_tl2) {
-						input_report_key(odin->input, BTN_TL2,
-								 pressed);
-						odin->reported_btn_tl2 = pressed;
-						any = true;
-					}
-				} else {
-					u16 v = clamp_t(int, odin->last_hat2y,
-							odin->calib_hat_left.min,
-							odin->calib_hat_left.max);
-
-					if (!odin->axes_initialized ||
-					    abs((s32)v - (s32)odin->reported_hat2y) >=
-					    ODIN_TRIG_DEADBAND) {
-						input_report_abs(odin->input,
-								 ABS_HAT2Y, v);
-						odin->reported_hat2y = v;
-						any = true;
-					}
+				if (want_analog &&
+				    (!odin->axes_initialized ||
+				     abs((s32)v - (s32)odin->reported_hat2y) >=
+				     ODIN_TRIG_DEADBAND)) {
+					input_report_abs(odin->input,
+							 ABS_HAT2Y, v);
+					odin->reported_hat2y = v;
+					any = true;
+				}
+				if (want_digital &&
+				    (!odin->axes_initialized ||
+				     pressed != odin->reported_btn_tl2)) {
+					input_report_key(odin->input, BTN_TL2,
+							 pressed);
+					odin->reported_btn_tl2 = pressed;
+					any = true;
 				}
 			}
 			if (!(odin->ignore_mask & ODIN_IGN_HAT2X)) {
-				if (odin->digital_triggers) {
-					int mid = (odin->calib_hat_right.max -
-						   odin->calib_hat_right.min) / 2;
-					bool pressed = odin->last_hat2x < mid;
+				int v = clamp_t(int, odin->last_hat2x,
+						odin->calib_hat_right.min,
+						odin->calib_hat_right.max);
+				int mid = (odin->calib_hat_right.max -
+					   odin->calib_hat_right.min) / 2;
+				bool pressed = odin->last_hat2x < mid;
+				bool want_analog = (odin->trigger_mode ==
+						    ODIN_TRIG_ANALOG ||
+						    odin->trigger_mode ==
+						    ODIN_TRIG_BOTH);
+				bool want_digital = (odin->trigger_mode ==
+						     ODIN_TRIG_DIGITAL ||
+						     odin->trigger_mode ==
+						     ODIN_TRIG_BOTH);
 
-					/* Mirror of the BTN_TL2 dedup above. */
-					if (!odin->axes_initialized ||
-					    pressed != odin->reported_btn_tr2) {
-						input_report_key(odin->input, BTN_TR2,
-								 pressed);
-						odin->reported_btn_tr2 = pressed;
-						any = true;
-					}
-				} else {
-					u16 v = clamp_t(int, odin->last_hat2x,
-							odin->calib_hat_right.min,
-							odin->calib_hat_right.max);
-
-					if (!odin->axes_initialized ||
-					    abs((s32)v - (s32)odin->reported_hat2x) >=
-					    ODIN_TRIG_DEADBAND) {
-						input_report_abs(odin->input,
-								 ABS_HAT2X, v);
-						odin->reported_hat2x = v;
-						any = true;
-					}
+				if (want_analog &&
+				    (!odin->axes_initialized ||
+				     abs((s32)v - (s32)odin->reported_hat2x) >=
+				     ODIN_TRIG_DEADBAND)) {
+					input_report_abs(odin->input,
+							 ABS_HAT2X, v);
+					odin->reported_hat2x = v;
+					any = true;
+				}
+				if (want_digital &&
+				    (!odin->axes_initialized ||
+				     pressed != odin->reported_btn_tr2)) {
+					input_report_key(odin->input, BTN_TR2,
+							 pressed);
+					odin->reported_btn_tr2 = pressed;
+					any = true;
 				}
 			}
 			odin->axes_initialized = true;
@@ -1401,18 +1416,23 @@ static ssize_t triggers_store(struct device *dev,
 			      const char *buf, size_t count)
 {
 	struct odin_gamepad *odin = dev_get_drvdata(dev);
-	int ret;
+	enum odin_trigger_mode new_mode;
+	int ret = 0;
+
+	if (sysfs_streq("digital", buf))
+		new_mode = ODIN_TRIG_DIGITAL;
+	else if (sysfs_streq("analog", buf))
+		new_mode = ODIN_TRIG_ANALOG;
+	else if (sysfs_streq("both", buf))
+		new_mode = ODIN_TRIG_BOTH;
+	else
+		return -EINVAL;
 
 	mutex_lock(&odin->lock);
-	if (sysfs_streq("digital", buf))
-		odin->digital_triggers = true;
-	else if (sysfs_streq("analog", buf))
-		odin->digital_triggers = false;
-	else {
-		mutex_unlock(&odin->lock);
-		return -EINVAL;
+	if (odin->trigger_mode != new_mode) {
+		odin->trigger_mode = new_mode;
+		ret = odin_input_recreate(odin);
 	}
-	ret = odin_input_recreate(odin);
 	mutex_unlock(&odin->lock);
 
 	if (ret)
@@ -1424,9 +1444,13 @@ static ssize_t triggers_show(struct device *dev, struct device_attribute *attr,
 			     char *buf)
 {
 	struct odin_gamepad *odin = dev_get_drvdata(dev);
+	const char *s = "analog";
 
-	return scnprintf(buf, PAGE_SIZE, "%s",
-			 odin->digital_triggers ? "digital" : "analog");
+	if (odin->trigger_mode == ODIN_TRIG_DIGITAL)
+		s = "digital";
+	else if (odin->trigger_mode == ODIN_TRIG_BOTH)
+		s = "both";
+	return scnprintf(buf, PAGE_SIZE, "%s", s);
 }
 static DEVICE_ATTR_RW(triggers);
 
@@ -1709,7 +1733,7 @@ static int odin_gamepad_probe(struct platform_device *pdev)
 	odin_init_default_calibration(odin);
 	odin_init_radial_state(odin);
 	odin_apply_default_layout(odin, dev->of_node);
-	odin->digital_triggers = false;
+	odin->trigger_mode = ODIN_TRIG_ANALOG;
 	odin->recovery_mode = false;
 	odin->ignore_mask = 0;
 	odin->m0_code = 0;
