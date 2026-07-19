@@ -102,7 +102,7 @@
 			label = "cam_focus";
 			gpios = <&pm8998_gpios 8 GPIO_ACTIVE_LOW>;
 			linux,input-type = <1>;
-			linux,code = <528>;
+			linux,code = <0>;
 			gpio-key,wakeup;
 			debounce-interval = <15>;
 			linux,can-disable;
