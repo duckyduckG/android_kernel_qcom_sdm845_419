@@ -79,6 +79,7 @@
 			#size-cells = <1>;
 			#cooling-cells = <2>;
 
+			qcom,fcc-max-ua = <2500000>;
 			qcom,pmic-revid = <&pmi8998_revid>;
 
 			io-channels = <&pmi8998_rradc 8>,
@@ -535,7 +536,7 @@
 				     <0x3 0xd8 0x2 IRQ_TYPE_EDGE_RISING>;
 			interrupt-names = "ovp-irq", "sc-irq";
 			label = "backlight";
-			qcom,fs-current-limit = <25000>;
+			qcom,fs-current-limit = <22500>;
 			qcom,boost-current-limit = <970>;
 			qcom,switching-freq = <800>;
 			qcom,ovp = <29600>;

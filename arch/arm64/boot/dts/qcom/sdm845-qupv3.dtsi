@@ -52,8 +52,7 @@
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se7_4uart_active>;
 		pinctrl-1 = <&qupv3_se7_4uart_sleep>;
-		interrupts-extended = <&intc GIC_SPI 608 IRQ_TYPE_LEVEL_HIGH>,
-				<&tlmm 96 IRQ_TYPE_LEVEL_HIGH>;
+		interrupts-extended = <&intc GIC_SPI 608 IRQ_TYPE_LEVEL_HIGH>;
 		status = "disabled";
 		qcom,wakeup-byte = <0xFD>;
 		qcom,wrapper-core = <&qupv3_0>;
@@ -157,7 +156,7 @@
 		pinctrl-0 = <&qupv3_se4_i2c_active>;
 		pinctrl-1 = <&qupv3_se4_i2c_sleep>;
 		qcom,wrapper-core = <&qupv3_0>;
-		status = "disabled";
+		status = "ok";
 	};
 
 	qupv3_se5_i2c: i2c@894000 {
@@ -177,7 +176,7 @@
 		pinctrl-0 = <&qupv3_se5_i2c_active>;
 		pinctrl-1 = <&qupv3_se5_i2c_sleep>;
 		qcom,wrapper-core = <&qupv3_0>;
-		status = "disabled";
+		status = "ok";
 	};
 
 	qupv3_se6_i2c: i2c@898000 {

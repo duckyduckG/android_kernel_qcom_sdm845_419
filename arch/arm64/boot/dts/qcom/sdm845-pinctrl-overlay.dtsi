@@ -54,3 +54,22 @@
 		};
 	};
 };
+
+&pm8998_gpios {
+	pinctrl-names = "default";
+	pinctrl-0 = <&gpio8_adc0_default
+				&gpio21_adc1_default>;
+	gpio8_adc0 {
+		gpio8_adc0_default: gpio8_adc0_default {
+			pins = "gpio8";
+			bias-high-impedance;
+		};
+	};
+
+	gpio21_adc1 {
+		gpio21_adc1_default: gpio21_adc1_default {
+			pins = "gpio21";
+			bias-high-impedance;
+		};
+	};
+};

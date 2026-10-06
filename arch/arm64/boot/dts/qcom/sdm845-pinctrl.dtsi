@@ -93,6 +93,18 @@
 		irqdomain-map-mask = <0xff 0>;
 		irqdomain-map-pass-thru = <0 0xff>;
 
+		fg_int_default: fg_int_default {
+			mux {
+				pins = "gpio27";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio27";
+				drive_strength = <2>;
+				bias-disable;
+			};
+		};
+
 		ufs_dev_reset_assert: ufs_dev_reset_assert {
 			config {
 				pins = "ufs_reset";
@@ -440,6 +452,29 @@
 			};
 		};
 
+		sde_dsi1_active: sde_dsi1_active {
+			mux {
+						pins = "gpio8";
+						function = "gpio";
+			};
+			config {
+					pins = "gpio8";
+					drive-strength = <8>; /* 8 mA */
+					bias-disable = <0>; /* no pull */
+			};
+		};
+		sde_dsi1_suspend: sde_dsi1_suspend {
+			mux {
+					pins = "gpio8";
+					function = "gpio";
+			};
+			config {
+					pins = "gpio8";
+					drive-strength = <2>; /* 2 mA */
+					bias-pull-down; /* PULL DOWN */
+			};			
+		};
+
 		pcie1 {
 			pcie1_clkreq_default: pcie1_clkreq_default {
 				mux {
@@ -469,12 +504,12 @@
 
 			pcie1_wake_default: pcie1_wake_default {
 				mux {
-					pins = "gpio104";
+					pins = "gpio11";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio104";
+					pins = "gpio11";
 					drive-strength = <2>;
 					bias-pull-down;
 				};
@@ -569,11 +604,11 @@
 		wcd_usbc_analog_en1 {
 			wcd_usbc_analog_en1_idle: wcd_usbc_ana_en1_idle {
 				mux {
-					pins = "gpio49";
+					//pins = "gpio49";
 					function = "gpio";
 				};
 				config {
-					pins = "gpio49";
+					//pins = "gpio49";
 					drive-strength = <2>;
 					bias-pull-down;
 					output-low;
@@ -582,11 +617,11 @@
 
 			wcd_usbc_analog_en1_active: wcd_usbc_ana_en1_active {
 				mux {
-					pins = "gpio49";
+					//pins = "gpio49";
 					function = "gpio";
 				};
 				config {
-					pins = "gpio49";
+					//pins = "gpio49";
 					drive-strength = <2>;
 					bias-disable;
 					output-high;
@@ -743,24 +778,24 @@
 		pmx_sde: pmx_sde {
 			sde_dsi_active: sde_dsi_active {
 				mux {
-					pins = "gpio6", "gpio52";
+					pins = "gpio6";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio6", "gpio52";
+					pins = "gpio6";
 					drive-strength = <8>;   /* 8 mA */
 					bias-disable = <0>;   /* no pull */
 				};
 			};
 			sde_dsi_suspend: sde_dsi_suspend {
 				mux {
-					pins = "gpio6", "gpio52";
+					pins = "gpio6";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio6", "gpio52";
+					pins = "gpio6";
 					drive-strength = <2>;   /* 2 mA */
 					bias-pull-down;         /* PULL DOWN */
 				};
@@ -851,12 +886,12 @@
 		pmx_ts_int_active {
 			ts_int_active: ts_int_active {
 				mux {
-					pins = "gpio122";
+					pins = "gpio125";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio122";
+					pins = "gpio125";
 					drive-strength = <8>;
 					bias-pull-up;
 				};
@@ -866,12 +901,12 @@
 		pmx_ts_int_suspend {
 			ts_int_suspend1: ts_int_suspend1 {
 				mux {
-					pins = "gpio122";
+					pins = "gpio125";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio122";
+					pins = "gpio125";
 					drive-strength = <2>;
 					bias-pull-down;
 				};
@@ -881,12 +916,12 @@
 		pmx_ts_reset_active {
 			ts_reset_active: ts_reset_active {
 				mux {
-					pins = "gpio99";
+					pins = "gpio104";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio99";
+					pins = "gpio104";
 					drive-strength = <8>;
 					bias-pull-up;
 				};
@@ -896,12 +931,12 @@
 		pmx_ts_reset_suspend {
 			ts_reset_suspend1: ts_reset_suspend1 {
 				mux {
-					pins = "gpio99";
+					pins = "gpio104";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio99";
+					pins = "gpio104";
 					drive-strength = <2>;
 					bias-pull-down;
 				};
@@ -911,27 +946,76 @@
 		pmx_ts_release {
 			ts_release: ts_release {
 				mux {
-					pins = "gpio122", "gpio99";
+					pins = "gpio125", "gpio104";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio122", "gpio99";
+					pins = "gpio125", "gpio104";
 					drive-strength = <2>;
 					bias-pull-down;
 				};
 			};
 		};
+		//zhounengwen@163.com begin             
+		/* add pingrp for touchscreen */
+		ts_int_default: ts_int_defalut {
+			mux {
+				pins = "gpio125";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio125";
+				drive-strength = <16>;
+				/*bias-pull-up;*/
+				input-enable;
+				bias-disable;
+			};
+		};
 
+		ts_int_output_high: ts_int_output_high {
+			mux {
+				pins = "gpio125";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio125";
+				output-high;
+			};
+		};
+
+		ts_int_output_low: ts_int_output_low {
+			mux {
+				pins = "gpio125";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio125";
+				output-low;
+			};
+		};
+
+		ts_int_input: ts_int_input {
+			mux {
+				pins = "gpio125";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio125";
+				input-enable;
+				bias-disable;
+			};
+		};
+		//zhounengwen@163.com end
 		ts_mux {
 			ts_active: ts_active {
 				mux {
-					pins = "gpio99", "gpio122";
+					pins = "gpio104", "gpio125";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio99", "gpio122";
+					pins = "gpio104", "gpio125";
 					drive-strength = <16>;
 					bias-pull-up;
 				};
@@ -939,12 +1023,12 @@
 
 			ts_reset_suspend: ts_reset_suspend {
 				mux {
-					pins = "gpio99";
+					pins = "gpio104";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio99";
+					pins = "gpio104";
 					drive-strength = <2>;
 					bias-pull-down;
 				};
@@ -952,12 +1036,41 @@
 
 			ts_int_suspend: ts_int_suspend {
 				mux {
-					pins = "gpio122";
+					pins = "gpio125";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio122";
+					pins = "gpio125";
+					drive-strength = <2>;
+					bias-pull-down;
+				};
+			};
+		};
+		
+		hdmidet_active {
+			hdmi_det_active: hdmi_det_active {
+				mux {
+					pins = "gpio121";
+					function = "gpio";
+				};
+				config {
+					pins = "gpio121";
+					drive-strength = <16>;
+					bias-pull-up;
+					input-enable;
+				};
+			};
+		};
+
+		hdmidet_suspend {
+			hdmi_det_suspend: hdmi_det_suspend {
+				mux {
+					pins = "gpio121";
+					function = "gpio";
+				};
+				config {
+					pins = "gpio121";
 					drive-strength = <2>;
 					bias-disable;
 				};
@@ -967,12 +1080,12 @@
 		ext_bridge_mux {
 			lt9611_pins: lt9611_pins {
 				mux {
-					pins = "gpio84", "gpio128", "gpio89";
+					//pins = "gpio84", "gpio128", "gpio89";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio84", "gpio128", "gpio89";
+					//pins = "gpio84", "gpio128", "gpio89";
 					bias-disable = <0>; /* no pull */
 					drive-strength = <8>;
 				};
@@ -1887,12 +2000,12 @@
 		qupv3_se0_i2c_pins: qupv3_se0_i2c_pins {
 			qupv3_se0_i2c_active: qupv3_se0_i2c_active {
 				mux {
-					pins = "gpio0", "gpio1";
+					//pins = "gpio0", "gpio1";
 					function = "qup0";
 				};
 
 				config {
-					pins = "gpio0", "gpio1";
+					//pins = "gpio0", "gpio1";
 					drive-strength = <2>;
 					bias-disable;
 				};
@@ -1900,12 +2013,12 @@
 
 			qupv3_se0_i2c_sleep: qupv3_se0_i2c_sleep {
 				mux {
-					pins = "gpio0", "gpio1";
+					//pins = "gpio0", "gpio1";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio0", "gpio1";
+					//pins = "gpio0", "gpio1";
 					drive-strength = <2>;
 					bias-pull-up;
 				};
@@ -1915,14 +2028,14 @@
 		qupv3_se0_spi_pins: qupv3_se0_spi_pins {
 			qupv3_se0_spi_active: qupv3_se0_spi_active {
 				mux {
-					pins = "gpio0", "gpio1", "gpio2",
-								"gpio3";
+					//pins = "gpio0", "gpio1", "gpio2",
+					//			"gpio3";
 					function = "qup0";
 				};
 
 				config {
-					pins = "gpio0", "gpio1", "gpio2",
-								"gpio3";
+					//pins = "gpio0", "gpio1", "gpio2",
+					//			"gpio3";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -1930,14 +2043,14 @@
 
 			qupv3_se0_spi_sleep: qupv3_se0_spi_sleep {
 				mux {
-					pins = "gpio0", "gpio1", "gpio2",
-								"gpio3";
+					//pins = "gpio0", "gpio1", "gpio2",
+					//			"gpio3";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio0", "gpio1", "gpio2",
-								"gpio3";
+					//pins = "gpio0", "gpio1", "gpio2",
+					//			"gpio3";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2008,6 +2121,7 @@
 		/* SE 2 pin mappings */
 		qupv3_se2_i2c_pins: qupv3_se2_i2c_pins {
 			qupv3_se2_i2c_active: qupv3_se2_i2c_active {
+			/*
 				mux {
 					pins = "gpio27", "gpio28";
 					function = "qup2";
@@ -2017,11 +2131,11 @@
 					pins = "gpio27", "gpio28";
 					drive-strength = <2>;
 					bias-disable;
-				};
+				};*/
 			};
 
 			qupv3_se2_i2c_sleep: qupv3_se2_i2c_sleep {
-				mux {
+				/*mux {
 					pins = "gpio27", "gpio28";
 					function = "gpio";
 				};
@@ -2030,13 +2144,13 @@
 					pins = "gpio27", "gpio28";
 					drive-strength = <2>;
 					bias-pull-up;
-				};
+				};*/
 			};
 		};
 
 		qupv3_se2_spi_pins: qupv3_se2_spi_pins {
 			qupv3_se2_spi_active: qupv3_se2_spi_active {
-				mux {
+				/*mux {
 					pins = "gpio27", "gpio28", "gpio29",
 								"gpio30";
 					function = "qup2";
@@ -2047,11 +2161,11 @@
 								"gpio30";
 					drive-strength = <6>;
 					bias-disable;
-				};
+				};*/
 			};
 
 			qupv3_se2_spi_sleep: qupv3_se2_spi_sleep {
-				mux {
+				/*mux {
 					pins = "gpio27", "gpio28", "gpio29",
 								"gpio30";
 					function = "gpio";
@@ -2062,7 +2176,7 @@
 								"gpio30";
 					drive-strength = <6>;
 					bias-disable;
-				};
+				};*/
 			};
 		};
 
@@ -2070,12 +2184,12 @@
 		qupv3_se3_i2c_pins: qupv3_se3_i2c_pins {
 			qupv3_se3_i2c_active: qupv3_se3_i2c_active {
 				mux {
-					pins = "gpio41", "gpio42";
+					//pins = "gpio41", "gpio42";
 					function = "qup3";
 				};
 
 				config {
-					pins = "gpio41", "gpio42";
+					//pins = "gpio41", "gpio42";
 					drive-strength = <2>;
 					bias-disable;
 				};
@@ -2083,12 +2197,12 @@
 
 			qupv3_se3_i2c_sleep: qupv3_se3_i2c_sleep {
 				mux {
-					pins = "gpio41", "gpio42";
+					//pins = "gpio41", "gpio42";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio41", "gpio42";
+					//pins = "gpio41", "gpio42";
 					drive-strength = <2>;
 					bias-pull-up;
 				};
@@ -2160,14 +2274,14 @@
 		qupv3_se3_spi_pins: qupv3_se3_spi_pins {
 			qupv3_se3_spi_active: qupv3_se3_spi_active {
 				mux {
-					pins = "gpio41", "gpio42", "gpio43",
-								"gpio44";
+					//pins = "gpio41", "gpio42", "gpio43",
+					//			"gpio44";
 					function = "qup3";
 				};
 
 				config {
-					pins = "gpio41", "gpio42", "gpio43",
-								"gpio44";
+					//pins = "gpio41", "gpio42", "gpio43",
+					//			"gpio44";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2175,14 +2289,14 @@
 
 			qupv3_se3_spi_sleep: qupv3_se3_spi_sleep {
 				mux {
-					pins = "gpio41", "gpio42", "gpio43",
-								"gpio44";
+					//pins = "gpio41", "gpio42", "gpio43",
+					//			"gpio44";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio41", "gpio42", "gpio43",
-								"gpio44";
+					//pins = "gpio41", "gpio42", "gpio43",
+					//			"gpio44";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2221,14 +2335,14 @@
 		qupv3_se4_spi_pins: qupv3_se4_spi_pins {
 			qupv3_se4_spi_active: qupv3_se4_spi_active {
 				mux {
-					pins = "gpio89", "gpio90", "gpio91",
-								"gpio92";
+					//pins = "gpio89", "gpio90", "gpio91",
+					//			"gpio92";
 					function = "qup4";
 				};
 
 				config {
-					pins = "gpio89", "gpio90", "gpio91",
-								"gpio92";
+					//pins = "gpio89", "gpio90", "gpio91",
+					//			"gpio92";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2236,14 +2350,14 @@
 
 			qupv3_se4_spi_sleep: qupv3_se4_spi_sleep {
 				mux {
-					pins = "gpio89", "gpio90", "gpio91",
-								"gpio92";
+					//pins = "gpio89", "gpio90", "gpio91",
+					//			"gpio92";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio89", "gpio90", "gpio91",
-								"gpio92";
+					//pins = "gpio89", "gpio90", "gpio91",
+					//			"gpio92";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2282,14 +2396,14 @@
 		qupv3_se5_spi_pins: qupv3_se5_spi_pins {
 			qupv3_se5_spi_active: qupv3_se5_spi_active {
 				mux {
-					pins = "gpio85", "gpio86", "gpio87",
-								"gpio88";
+					//pins = "gpio85", "gpio86", "gpio87",
+					//			"gpio88";
 					function = "qup5";
 				};
 
 				config {
-					pins = "gpio85", "gpio86", "gpio87",
-								"gpio88";
+					//pins = "gpio85", "gpio86", "gpio87",
+					//			"gpio88";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2297,14 +2411,14 @@
 
 			qupv3_se5_spi_sleep: qupv3_se5_spi_sleep {
 				mux {
-					pins = "gpio85", "gpio86", "gpio87",
-								"gpio88";
+					//pins = "gpio85", "gpio86", "gpio87",
+					//			"gpio88";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio85", "gpio86", "gpio87",
-								"gpio88";
+					//pins = "gpio85", "gpio86", "gpio87",
+					//			"gpio88";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2444,14 +2558,14 @@
 		qupv3_se7_4uart_pins: qupv3_se7_4uart_pins {
 			qupv3_se7_4uart_active: qupv3_se7_4uart_active {
 				mux {
-					pins = "gpio93", "gpio94", "gpio95",
-								"gpio96";
+					//pins = "gpio93", "gpio94", "gpio95",
+					//			"gpio96";
 					function = "qup7";
 				};
 
 				config {
-					pins = "gpio93", "gpio94", "gpio95",
-								"gpio96";
+					//pins = "gpio93", "gpio94", "gpio95",
+					//			"gpio96";
 					drive-strength = <2>;
 					bias-disable;
 				};
@@ -2459,14 +2573,14 @@
 
 			qupv3_se7_4uart_sleep: qupv3_se7_4uart_sleep {
 				mux {
-					pins = "gpio93", "gpio94", "gpio95",
-								"gpio96";
+					//pins = "gpio93", "gpio94", "gpio95",
+					//			"gpio96";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio93", "gpio94", "gpio95",
-								"gpio96";
+					//pins = "gpio93", "gpio94", "gpio95",
+					//			"gpio96";
 					drive-strength = <2>;
 					bias-disable;
 				};
@@ -2476,14 +2590,14 @@
 		qupv3_se7_spi_pins: qupv3_se7_spi_pins {
 			qupv3_se7_spi_active: qupv3_se7_spi_active {
 				mux {
-					pins = "gpio93", "gpio94", "gpio95",
-								"gpio96";
+					//pins = "gpio93", "gpio94", "gpio95",
+					//			"gpio96";
 					function = "qup7";
 				};
 
 				config {
-					pins = "gpio93", "gpio94", "gpio95",
-								"gpio96";
+					//pins = "gpio93", "gpio94", "gpio95",
+					//			"gpio96";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2491,14 +2605,14 @@
 
 			qupv3_se7_spi_sleep: qupv3_se7_spi_sleep {
 				mux {
-					pins = "gpio93", "gpio94", "gpio95",
-								"gpio96";
+					//pins = "gpio93", "gpio94", "gpio95",
+					//			"gpio96";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio93", "gpio94", "gpio95",
-								"gpio96";
+					//pins = "gpio93", "gpio94", "gpio95",
+					//			"gpio96";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2571,12 +2685,12 @@
 		qupv3_se9_i2c_pins: qupv3_se9_i2c_pins {
 			qupv3_se9_i2c_active: qupv3_se9_i2c_active {
 				mux {
-					pins = "gpio6", "gpio7";
+					//pins = "gpio6", "gpio7";
 					function = "qup9";
 				};
 
 				config {
-					pins = "gpio6", "gpio7";
+					//pins = "gpio6", "gpio7";
 					drive-strength = <2>;
 					bias-disable;
 				};
@@ -2584,12 +2698,12 @@
 
 			qupv3_se9_i2c_sleep: qupv3_se9_i2c_sleep {
 				mux {
-					pins = "gpio6", "gpio7";
+					//pins = "gpio6", "gpio7";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio6", "gpio7";
+					//pins = "gpio6", "gpio7";
 					drive-strength = <2>;
 					bias-pull-up;
 				};
@@ -2627,14 +2741,14 @@
 		qupv3_se9_spi_pins: qupv3_se9_spi_pins {
 			qupv3_se9_spi_active: qupv3_se9_spi_active {
 				mux {
-					pins = "gpio4", "gpio5", "gpio6",
-								"gpio7";
+					//pins = "gpio4", "gpio5", "gpio6",
+					//			"gpio7";
 					function = "qup9";
 				};
 
 				config {
-					pins = "gpio4", "gpio5", "gpio6",
-								"gpio7";
+					//pins = "gpio4", "gpio5", "gpio6",
+					//			"gpio7";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2642,14 +2756,14 @@
 
 			qupv3_se9_spi_sleep: qupv3_se9_spi_sleep {
 				mux {
-					pins = "gpio4", "gpio5", "gpio6",
-								"gpio7";
+					//pins = "gpio4", "gpio5", "gpio6",
+					//			"gpio7";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio4", "gpio5", "gpio6",
-								"gpio7";
+					//pins = "gpio4", "gpio5", "gpio6",
+					//			"gpio7";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2810,12 +2924,12 @@
 		qupv3_se12_i2c_pins: qupv3_se12_i2c_pins {
 			qupv3_se12_i2c_active: qupv3_se12_i2c_active {
 				mux {
-					pins = "gpio49", "gpio50";
+					//pins = "gpio49", "gpio50";
 					function = "qup12";
 				};
 
 				config {
-					pins = "gpio49", "gpio50";
+					//pins = "gpio49", "gpio50";
 					drive-strength = <2>;
 					bias-disable;
 				};
@@ -2823,12 +2937,12 @@
 
 			qupv3_se12_i2c_sleep: qupv3_se12_i2c_sleep {
 				mux {
-					pins = "gpio49", "gpio50";
+					//pins = "gpio49", "gpio50";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio49", "gpio50";
+					//pins = "gpio49", "gpio50";
 					drive-strength = <2>;
 					bias-pull-up;
 				};
@@ -2838,14 +2952,14 @@
 		qupv3_se12_spi_pins: qupv3_se12_spi_pins {
 			qupv3_se12_spi_active: qupv3_se12_spi_active {
 				mux {
-					pins = "gpio49", "gpio50", "gpio51",
-								"gpio52";
+					//pins = "gpio49", "gpio50", "gpio51",
+					//			"gpio52";
 					function = "qup12";
 				};
 
 				config {
-					pins = "gpio49", "gpio50", "gpio51",
-								"gpio52";
+					//pins = "gpio49", "gpio50", "gpio51",
+					//			"gpio52";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -2853,14 +2967,14 @@
 
 			qupv3_se12_spi_sleep: qupv3_se12_spi_sleep {
 				mux {
-					pins = "gpio49", "gpio50", "gpio51",
-								"gpio52";
+					//pins = "gpio49", "gpio50", "gpio51",
+					//			"gpio52";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio49", "gpio50", "gpio51",
-								"gpio52";
+					//pins = "gpio49", "gpio50", "gpio51",
+					//			"gpio52";
 					drive-strength = <6>;
 					bias-disable;
 				};
@@ -3138,12 +3252,12 @@
 		cam_sensor_depth_active: cam_sensor_depth_active {
 			/* RESET,AVDD LO ,IMG_START, ILLU_EN */
 			mux {
-				pins = "gpio28","gpio23","gpio24";
+				pins = "gpio28","gpio23";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio28","gpio23","gpio24";
+				pins = "gpio28","gpio23";
 				bias-disable; /* No PULL */
 				drive-strength = <2>; /* 2 MA */
 			};
@@ -3152,12 +3266,12 @@
 		cam_sensor_depth_suspend: cam_sensor_depth_suspend {
 			/* RESET, AVDD LO ,IMG_START, ILLU_EN */
 			mux {
-				pins = "gpio28","gpio23","gpio24";
+				pins = "gpio28","gpio23";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio28","gpio23","gpio24";
+				pins = "gpio28","gpio23";
 				bias-pull-down; /* PULL DOWN */
 				drive-strength = <2>; /* 2 MA */
 			};
@@ -3194,12 +3308,12 @@
 		max_6dof_active: max_6dof_active {
 			/* RESET */
 			mux {
-				pins = "gpio30","gpio95","gpio94";
+				pins = "gpio30", "gpio94";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio30","gpio95","gpio94";
+				pins = "gpio30", "gpio94";
 				bias-disable; /* No PULL */
 				drive-strength = <8>; /* 2 MA */
 			};
@@ -3208,12 +3322,12 @@
 		max_6dof_suspend: max_6dof_suspend {
 			/* RESET */
 			mux {
-				pins = "gpio30","gpio95","gpio94";
+				pins = "gpio30", "gpio94";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio30","gpio95","gpio94";
+				pins = "gpio30", "gpio94";
 				bias-pull-down; /* PULL DOWN */
 				drive-strength = <8>; /* 2 MA */
 			};
@@ -3248,7 +3362,7 @@
 		};
 
 		cam_sensor_rear_active: cam_sensor_rear_active {
-			/* RESET, AVDD LDO */
+			/* RESET, STANDBY, AVDD LDO */
 			mux {
 				pins = "gpio80","gpio79";
 				function = "gpio";
@@ -3262,7 +3376,7 @@
 		};
 
 		cam_sensor_rear_suspend: cam_sensor_rear_suspend {
-			/* RESET, AVDD LDO */
+			/* RESET, STANDBY, AVDD LDO */
 			mux {
 				pins = "gpio80","gpio79";
 				function = "gpio";
@@ -3334,14 +3448,14 @@
 
 
 		cam_sensor_front_active: cam_sensor_front_active {
-			/* RESET  AVDD_LDO*/
+			/* RESET  STANDBY AVDD_LDO*/
 			mux {
-				pins = "gpio28";
+				//pins = "gpio7","gpio40","gpio84";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio28";
+				//pins = "gpio7","gpio40","gpio84";
 				bias-disable; /* No PULL */
 				drive-strength = <2>; /* 2 MA */
 			};
@@ -3350,12 +3464,12 @@
 		cam_sensor_front_suspend: cam_sensor_front_suspend {
 			/* RESET */
 			mux {
-				pins = "gpio28";
+				//pins = "gpio7","gpio40","gpio84";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio28";
+				//pins = "gpio7","gpio40","gpio84";
 				bias-pull-down; /* PULL DOWN */
 				drive-strength = <2>; /* 2 MA */
 				output-low;
@@ -3453,12 +3567,12 @@
 		cam_sensor_rear_vana: cam_sensor_rear_vana {
 			/*  AVDD LDO */
 			mux {
-				pins = "gpio8";
+				//pins = "gpio8";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio8";
+				//pins = "gpio8";
 				bias-disable; /* No PULL */
 				drive-strength = <2>; /* 2 MA */
 			};
@@ -3467,12 +3581,12 @@
 		cam_res_mgr_active: cam_res_mgr_active {
 			/* AVDD_LDO*/
 			mux {
-				pins = "gpio8";
+				//pins = "gpio8";
 				function = "gpio";
 			};
 
 			config {
-				pins = "gpio8";
+				//pins = "gpio8";
 				bias-disable; /* No PULL */
 				drive-strength = <2>; /* 2 MA */
 			};
@@ -3515,11 +3629,11 @@
 				function = "tsif1_en";
 			};
 			tsif1_data {
-				pins = "gpio91"; /* TSIF0 DATA */
+				//pins = "gpio91"; /* TSIF0 DATA */
 				function = "tsif1_data";
 			};
 			signals_cfg {
-				pins = "gpio89", "gpio90", "gpio91";
+				pins = "gpio89", "gpio90";
 				drive_strength = <2>;	/* 2 mA */
 				bias-pull-down;		/* pull down */
 			};
@@ -3528,10 +3642,10 @@
 		/* sync signal is only used if configured to mode-2 */
 		tsif0_sync_active: tsif0_sync_active {
 			tsif1_sync {
-				pins = "gpio12";	/* TSIF0 SYNC */
-				function = "tsif1_sync";
-				drive_strength = <2>;	/* 2 mA */
-				bias-pull-down;		/* pull down */
+			//	pins = "gpio12";	/* TSIF0 SYNC */
+			//	function = "tsif1_sync";
+			//	drive_strength = <2>;	/* 2 mA */
+			//	bias-pull-down;		/* pull down */
 			};
 		};
 
@@ -3545,11 +3659,11 @@
 				function = "tsif2_en";
 			};
 			tsif2_data {
-				pins = "gpio95"; /* TSIF1 DATA */
+				//pins = "gpio95"; /* TSIF1 DATA */
 				function = "tsif2_data";
 			};
 			signals_cfg {
-				pins = "gpio93", "gpio94", "gpio95";
+				pins = "gpio93", "gpio94";
 				drive_strength = <2>;	/* 2 mA */
 				bias-pull-down;		/* pull down */
 			};
@@ -3558,7 +3672,7 @@
 		/* sync signal is only used if configured to mode-2 */
 		tsif1_sync_active: tsif1_sync_active {
 			tsif2_sync {
-				pins = "gpio96";	/* TSIF1 SYNC */
+				//pins = "gpio96";	/* TSIF1 SYNC */
 				function = "tsif2_sync";
 				drive_strength = <2>;	/* 2 mA */
 				bias-pull-down;		/* pull down */
@@ -3608,12 +3722,12 @@
 				 * mdm2ap-errfatal
 				 * mdm2ap-vddmin
 				 */
-					pins = "gpio22", "gpio20";
+					pins = "gpio20";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio22", "gpio20";
+					pins = "gpio20";
 					drive-strength = <8>;
 					bias-disable;
 				};
@@ -3624,14 +3738,69 @@
 					 * mdm2ap-errfatal
 					 * mdm2ap-vddmin
 					 */
-					pins = "gpio22", "gpio20";
+					pins = "gpio20";
 					function = "gpio";
 				};
 
 				config {
-					pins = "gpio22", "gpio20";
+					pins = "gpio20";
 					drive-strength = <8>;
 					bias-disable;
+				};
+			};
+		};
+		
+		quec_gpio_init {
+			quec_input_gpios_init: quec_input_gpios_init {
+				mux {
+					pins = "gpio0", "gpio3", "gpio22", "gpio24", "gpio26", "gpio40", "gpio41", "gpio49", "gpio52", "gpio91", "gpio92", "gpio95", "gpio96", "gpio116", "gpio122", "gpio124", "gpio128";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio0", "gpio3", "gpio22", "gpio24", "gpio26", "gpio40", "gpio41", "gpio49", "gpio52", "gpio91", "gpio92", "gpio95", "gpio96", "gpio116", "gpio122", "gpio124", "gpio128";
+					drive-strength = <2>;
+					bias-pull-up;
+				};
+			};
+			
+			quec_output_gpios_init: quec_output_gpios_init {
+				mux {
+					pins = "gpio88";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio88";
+					drive-strength = <8>; /* 8 mA */
+					bias-disable;
+					output-high;
+				};
+			};
+		};
+		
+		atest_usb13 {
+			atest_usb13_active: atest_usb13_active {
+				mux {
+					pins = "gpio99";
+					function = "atest_usb13";
+				};
+				config {
+					pins = "gpio99";
+					drive-strength = <12>;
+					bias-disable;
+				};
+			};
+
+			atest_usb13_suspend: atest_usb13_suspend {
+				mux {
+					pins = "gpio99";
+					function = "gpio";
+				};
+				config {
+					pins = "gpio99";
+					bias-pull-down;
+					drive-strength = <2>;
 				};
 			};
 		};
@@ -3680,7 +3849,7 @@
 
 	key_cam_focus {
 		key_cam_focus_default: key_cam_focus_default {
-			pins = "gpio8";
+			//pins = "gpio8";
 			function = "normal";
 			input-enable;
 			bias-pull-up;

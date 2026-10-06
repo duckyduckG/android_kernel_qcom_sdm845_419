@@ -7,6 +7,7 @@
 
 &soc {
 	pcie0: qcom,pcie@0x1c00000 {
+		status = "disabled";
 		compatible = "qcom,pci-msm";
 		cell-index = <0>;
 
@@ -262,6 +263,7 @@
 	};
 
 	pcie1: qcom,pcie@0x1c08000 {
+		status = "disabled";
 		compatible = "qcom,pci-msm";
 		cell-index = <1>;
 

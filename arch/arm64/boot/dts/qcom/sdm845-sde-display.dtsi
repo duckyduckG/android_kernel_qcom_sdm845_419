@@ -24,6 +24,8 @@
 #include "./display/dsi-panel-nt36850-truly-dualmipi-wqhd-cmd.dtsi"
 #include "./display/dsi-panel-test-dualmipi-oled-cmd.dtsi"
 #include <dt-bindings/clock/mdss-10nm-pll-clk.h>
+#include "./ayn/dsi-panel-lt8912-1080p-dsi1-video.dtsi"
+#include "./ayn/dsi-panel-innolux-td4328-1080p-cmd.dtsi"
 
 &soc {
 	dsi_panel_pwr_supply: dsi_panel_pwr_supply {
@@ -33,8 +35,8 @@
 		qcom,panel-supply-entry@0 {
 			reg = <0>;
 			qcom,supply-name = "vddio";
-			qcom,supply-min-voltage = <1800000>;
-			qcom,supply-max-voltage = <1800000>;
+			qcom,supply-min-voltage = <1850000>;
+			qcom,supply-max-voltage = <1850000>;
 			qcom,supply-enable-load = <62000>;
 			qcom,supply-disable-load = <80>;
 			qcom,supply-post-on-sleep = <20>;
@@ -67,8 +69,8 @@
 		qcom,panel-supply-entry@0 {
 			reg = <0>;
 			qcom,supply-name = "vddio";
-			qcom,supply-min-voltage = <1800000>;
-			qcom,supply-max-voltage = <1800000>;
+			qcom,supply-min-voltage = <1850000>;
+			qcom,supply-max-voltage = <1850000>;
 			qcom,supply-enable-load = <62000>;
 			qcom,supply-disable-load = <80>;
 			qcom,supply-post-on-sleep = <20>;
@@ -82,8 +84,8 @@
 		qcom,panel-supply-entry@0 {
 			reg = <0>;
 			qcom,supply-name = "vddio";
-			qcom,supply-min-voltage = <1800000>;
-			qcom,supply-max-voltage = <1800000>;
+			qcom,supply-min-voltage = <1850000>;
+			qcom,supply-max-voltage = <1850000>;
 			qcom,supply-enable-load = <62000>;
 			qcom,supply-disable-load = <80>;
 			qcom,supply-post-on-sleep = <20>;
@@ -527,6 +529,39 @@
 				08 05 03 04 00];
 			qcom,display-topology = <2 0 2>,
 				<1 0 2>;
+			qcom,default-topology-index = <0>;
+		};
+	};
+};
+
+
+&dsi_innolux_td4328_1080p_cmd {/* primary */
+	qcom,dsi-select-clocks = "mux_byte_clk0", "mux_pixel_clk0";
+	qcom,mdss-dsi-t-clk-post = <0x0E>;
+	qcom,mdss-dsi-t-clk-pre = <0x36>;
+	qcom,mdss-dsi-display-timings {
+		timing@0{
+			qcom,mdss-dsi-panel-phy-timings = [00 21 08 08 25 23 08
+				08 09 02 04 00];
+			qcom,mdss-dsi-panel-clockrate = <957274560>;
+			qcom,display-topology = <1 0 1>;
+			qcom,default-topology-index = <0>;
+			qcom,mdss-dsi-panel-jitter = <0x10 0xa>;
+		};
+	};
+};
+
+&dsi_lt8912_1080_dsi1_video {/* TODO: secondary */
+	/* qcom,dsi-select-sec-clocks */
+	qcom,dsi-select-clocks = "mux_byte_clk1", "mux_pixel_clk1";
+	qcom,mdss-dsi-t-clk-post = <0x0d>;  //1920x1080 60 4lane
+	qcom,mdss-dsi-t-clk-pre = <0x32>;   //1920x1080 60 4lane
+	qcom,mdss-dsi-display-timings {
+		timing@0{
+			qcom,mdss-dsi-panel-phy-timings = [00 1E 08 08 24 22 08
+				08 08 02 04 00];
+			qcom,mdss-dsi-panel-clockrate = <893376000>;
+			qcom,display-topology = <1 0 1>;
 			qcom,default-topology-index = <0>;
 		};
 	};

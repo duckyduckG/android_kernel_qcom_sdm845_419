@@ -138,6 +138,9 @@
 		refgen-supply = <&pm8998_l26>;
 		qcom,override-bias-ctrl2;
 		qcom,vdd-voltage-level = <0 880000 880000>;
+		pinctrl-names = "atest_usb13_suspend", "atest_usb13_active";
+		pinctrl-0 = <&atest_usb13_suspend>;
+		pinctrl-1 = <&atest_usb13_active>;
 		qcom,qusb-phy-reg-offset =
 			<0x240 /* QUSB2PHY_PORT_TUNE1 */
 			 0x1a0 /* QUSB2PHY_PLL_COMMON_STATUS_ONE */
@@ -432,9 +435,9 @@
 		reg-names = "qusb_phy_base",
 				"refgen_north_bg_reg_addr";
 
-		vdd-supply = <&pm8998_l1>;
-		vdda18-supply = <&pm8998_l12>;
-		vdda33-supply = <&pm8998_l24>;
+		// vdd-supply = <&pm8998_l1>;
+		// vdda18-supply = <&pm8998_l12>;
+		// vdda33-supply = <&pm8998_l24>;
 		qcom,override-bias-ctrl2;
 		qcom,vdd-voltage-level = <0 880000 880000>;
 		qcom,qusb-phy-reg-offset =
@@ -615,6 +618,6 @@
 		resets = <&clock_gcc GCC_USB3_PHY_SEC_BCR>,
 			<&clock_gcc GCC_USB3PHY_PHY_SEC_BCR>;
 		reset-names = "phy_reset", "phy_phy_reset";
-		status = "disabled";
+		status = "okay";
 	};
 };

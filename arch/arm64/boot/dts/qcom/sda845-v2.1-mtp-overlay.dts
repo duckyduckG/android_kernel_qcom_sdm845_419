@@ -30,3 +30,7 @@
 	qcom,msm-id = <341 0x20001>;
 	qcom,board-id = <8 0>;
 };
+
+&sde_dsi {
+	qcom,dsi-default-panel = <&dsi_lt8912_1080_dsi1_video>;
+};

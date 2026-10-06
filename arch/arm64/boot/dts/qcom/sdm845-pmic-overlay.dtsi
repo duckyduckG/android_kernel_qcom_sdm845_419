@@ -35,6 +35,10 @@
 	pinctrl-0 = <&qnovo_fet_ctrl_default>;
 };
 
+&pmi8998_pdphy {
+	vbus-supply = <&smb2_vbus>;
+};
+
 &usb0 {
 	extcon = <&pmi8998_pdphy>, <&pmi8998_charger>, <&eud>;
 };
