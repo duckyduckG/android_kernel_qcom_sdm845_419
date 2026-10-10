@@ -31,6 +31,6 @@
 	qcom,board-id = <8 0>;
 };
 
-&sde_dsi {
+&sde_dsi1 {
 	qcom,dsi-default-panel = <&dsi_lt8912_1080_dsi1_video>;
 };
