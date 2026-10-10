@@ -1382,8 +1382,8 @@ static int lt8912_i2c_probe(struct i2c_client *client,
 #endif
 #ifdef CONFIG_FB
 	msm_drm_unregister_client(&data->fb_notifier);
-#endif
 err_fb_cb:
+#endif
 err_read_rev:
 free_reset_gpio:
 	lt8912_power_set(data, true);
