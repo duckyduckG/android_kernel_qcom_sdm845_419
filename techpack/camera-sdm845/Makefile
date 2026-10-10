@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 # auto-detect subdirs
+ifeq ($(CONFIG_VENDOR_AYN_ODIN_M0)$(CONFIG_VENDOR_AYN_ODIN_M2),)
 ifeq ($(CONFIG_ARCH_SDM845), y)
 include $(srctree)/techpack/camera-sdm845/config/sdm845camera.conf
 endif
@@ -21,4 +22,5 @@ LINUXINCLUDE    += \
                 -I$(srctree)/techpack/camera-sdm845/include/uapi \
                 -I$(srctree)/techpack/camera-sdm845/include
 obj-y += drivers/
+endif
 endif
