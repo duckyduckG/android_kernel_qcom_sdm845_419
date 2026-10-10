@@ -263,7 +263,6 @@ static int ads7828_probe(struct i2c_client *client,
 	unsigned int regval;
 	enum ads7828_chips chip;
 	struct regulator *reg;
-	int ret;
 	int rc,v;
 
 	data = devm_kzalloc(dev, sizeof(struct ads7828_data), GFP_KERNEL);
