@@ -394,24 +394,34 @@ static int gpio5_pwm_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static struct class_attribute gpio_class_attrs[] =
+static struct class_attribute class_attr_state = __ATTR(state, 0664, state_show, state_store);
+static struct class_attribute class_attr_duty = __ATTR(duty, 0664, duty_show, duty_store);
+static struct class_attribute class_attr_period = __ATTR(period, 0664, period_show, period_store);
+static struct class_attribute class_attr_speed = __ATTR(speed, 0444, speed_show, NULL);
+static struct class_attribute class_attr_thermal_mode = __ATTR(thermal_mode, 0664, thermal_show, thermal_store);
+static struct class_attribute class_attr_en_backlight = __ATTR(en_backlight, 0664, en_backlight_show, en_backlight_store);
+static struct class_attribute class_attr_hdmi_state = __ATTR(hdmi_state, 0664, hdmi_state_show, hdmi_state_store);
+static struct class_attribute class_attr_dp_state = __ATTR(dp_state, 0664, dp_state_show, dp_state_store);
+
+static struct attribute *gpio5_pwm_attrs[] =
 {
-	__ATTR(state, 0664, state_show, state_store),
-	__ATTR(duty, 0664, duty_show, duty_store),
-	__ATTR(period, 0664, period_show, period_store),
-	__ATTR(speed, 0664, speed_show, NULL),
-	__ATTR(thermal_mode, 0664, thermal_show, thermal_store),
-	__ATTR(en_backlight, 0664, en_backlight_show, en_backlight_store),
-	__ATTR(hdmi_state, 0664, hdmi_state_show, hdmi_state_store),
-	__ATTR(dp_state, 0664, dp_state_show, dp_state_store),
-	__ATTR_NULL,
+	&class_attr_state.attr,
+	&class_attr_duty.attr,
+	&class_attr_period.attr,
+	&class_attr_speed.attr,
+	&class_attr_thermal_mode.attr,
+	&class_attr_en_backlight.attr,
+	&class_attr_hdmi_state.attr,
+	&class_attr_dp_state.attr,
+	NULL,
 };
+ATTRIBUTE_GROUPS(gpio5_pwm);
 
 static struct class gpio5_pwm_class =
 {
 	.name = "gpio5_pwm2",
 	.owner = THIS_MODULE,
-	.class_attrs = gpio_class_attrs,
+	.class_groups = gpio5_pwm_groups,
 };
 
 static const struct of_device_id pwm_match_table[] =

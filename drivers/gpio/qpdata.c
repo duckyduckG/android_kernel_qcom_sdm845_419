@@ -119,18 +119,19 @@ static ssize_t qpdata_x_store(struct class *class, struct class_attribute *attr,
 	return len;
 }
 
-static struct class_attribute qpdata_class_attrs[] =
+static struct class_attribute class_attr_qpdata_x = __ATTR(qpdata_x, 0664, qpdata_x_show, qpdata_x_store);
+static struct attribute *qpdata_attrs[] =
 {
-
-	__ATTR(qpdata_x, 0664, qpdata_x_show, qpdata_x_store),
-	__ATTR_NULL,
+	&class_attr_qpdata_x.attr,
+	NULL,
 };
+ATTRIBUTE_GROUPS(qpdata);
 
 static struct class qpdata_x_class =
 {
 	.name = "qpdata_x",
 	.owner = THIS_MODULE,
-	.class_attrs = qpdata_class_attrs,
+	.class_groups = qpdata_groups,
 };
 
 
