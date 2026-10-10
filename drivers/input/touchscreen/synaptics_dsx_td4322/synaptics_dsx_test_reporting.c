@@ -35,13 +35,14 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/interrupt.h>
+#include <linux/vmalloc.h>
 #include <linux/delay.h>
 #include <linux/input.h>
 #include <linux/ctype.h>
 #include <linux/hrtimer.h>
 #include <linux/platform_device.h>
 #include <linux/input/synaptics_dsx.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include "synaptics_dsx_core.h"
 
 #define SYSFS_FOLDER_NAME "f54"
