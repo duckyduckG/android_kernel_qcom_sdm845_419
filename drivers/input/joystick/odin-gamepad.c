@@ -9,6 +9,7 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/gpio/consumer.h>
+#include <linux/iio/consumer.h>
 #include <linux/init.h>
 #include <linux/input.h>
 #include <linux/kernel.h>
@@ -22,8 +23,6 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/sysfs.h>
-
-#include <linux/qpnp/qpnp-adc.h>
 
 #define DRV_NAME "odin-gamepad"
 
@@ -175,8 +174,16 @@ module_param(invert_rx, bool, 0644);
 static bool invert_ry;
 module_param(invert_ry, bool, 0644);
 
-extern int32_t qpnp_vadc_odin_read(enum qpnp_vadc_channels channel,
-				   struct qpnp_vadc_result *result);
+/* iio consumer chan names
+ */
+static const char * const odin_adc_names[] = {
+	"gpio9_adc0",
+	"gpio10_adc0",
+	"gpio21_adc1",
+	"gpio12_adc0",
+	"gpio8_adc0",
+	"gpio11_adc0",
+};
 
 /* Called by the DSI panel driver on suspend/resume; the panel driver
  * references these unconditionally so the symbols must exist. When the
@@ -279,7 +286,7 @@ struct odin_hat_calib {
 #define ODIN_STICK_FUZZ		250
 #define ODIN_STICK_FLAT		500
 
-/* qpnp_vadc_odin_read() index → hardware channel. */
+/* adc channel index → hardware channel. */
 enum {
 	ODIN_ADC_LY = 0,	/* gpio9  -> left stick Y  */
 	ODIN_ADC_LX,		/* gpio10 -> left stick X  */
@@ -360,6 +367,8 @@ struct odin_gamepad {
 
 	struct odin_axis_rt axis[ODIN_ADC_COUNT_STICKS];
 	struct odin_trig_rt trig[2];
+
+	struct iio_channel *adc_chan[ODIN_ADC_COUNT];
 
 	struct class *class;
 	struct device *cdev;	/* class device under /sys/class/... */
@@ -608,7 +617,7 @@ static int odin_gpio_thread(void *arg)
 
 /* ADC polling: sticks + analog triggers. */
 
-/* qpnp_vadc_odin_read() index → reg/hardware mapping:
+/* adc channel index → reg/hardware mapping:
  *   0=gpio9 (LY), 1=gpio10 (LX), 2=gpio21 (RY, /3 prescale),
  *   3=gpio12 (RX), 4=gpio8 (L2), 5=gpio11 (R2).
  * Stick polarity: LY/LX/RY up/right = bigger raw; RX left = bigger raw.
@@ -897,12 +906,12 @@ static u16 odin_scale_trigger(struct odin_trig_rt *trig, s64 phys_uv)
 static int odin_adc_thread(void *arg)
 {
 	struct odin_gamepad *odin = arg;
-	struct qpnp_vadc_result r;
 	int i, rc;
 	s64 phys[ODIN_ADC_COUNT];
 	bool valid[ODIN_ADC_COUNT];
 	int warmup = 0;
 	int seen_recenter = recenter;
+	int uv = 0;
 
 	while (!kthread_should_stop()) {
 		if (atomic_read(&odin_screen_on))
@@ -915,16 +924,15 @@ static int odin_adc_thread(void *arg)
 		}
 
 		for (i = 0; i < ODIN_ADC_COUNT; i++) {
-			memset(&r, 0, sizeof(r));
-			rc = qpnp_vadc_odin_read(i, &r);
-			if (rc) {
+			rc = iio_read_channel_processed(odin->adc_chan[i], &uv);
+			if (rc < 0) {
 				/* Don't substitute 0: would latch a bogus center. */
 				phys[i] = (i < ODIN_ADC_COUNT_STICKS) ?
 					  odin->smooth_uv[i] : 0;
 				valid[i] = false;
 				continue;
 			}
-			phys[i] = r.physical;
+			phys[i] = uv;
 			valid[i] = true;
 		}
 
@@ -1544,6 +1552,28 @@ static int odin_request_gpios(struct odin_gamepad *odin)
 	return 0;
 }
 
+/* adc channel helper*/
+static int odin_request_adc(struct odin_gamepad *odin)
+{
+	int i;
+
+	BUILD_BUG_ON(ARRAY_SIZE(odin_adc_names) != ODIN_ADC_COUNT);
+
+	for (i = 0; i < ODIN_ADC_COUNT; i++) {
+		struct iio_channel *ch;
+
+		ch = devm_iio_channel_get(odin->dev, odin_adc_names[i]);
+		if (IS_ERR(ch)) {
+			if (PTR_ERR(ch) != -EPROBE_DEFER)
+				dev_err(odin->dev, "IIO channel \"%s\": %ld\n",
+					odin_adc_names[i], PTR_ERR(ch));
+			return PTR_ERR(ch);
+		}
+		odin->adc_chan[i] = ch;
+	}
+	return 0;
+}
+
 static void odin_apply_default_layout(struct odin_gamepad *odin,
 				      struct device_node *np)
 {
@@ -1606,6 +1636,10 @@ static int odin_gamepad_probe(struct platform_device *pdev)
 	odin->m1_code = 0;
 
 	ret = odin_request_gpios(odin);
+	if (ret)
+		return ret;
+
+	ret = odin_request_adc(odin);
 	if (ret)
 		return ret;
 
