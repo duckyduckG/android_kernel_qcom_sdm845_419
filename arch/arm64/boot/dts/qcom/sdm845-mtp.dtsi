@@ -169,6 +169,16 @@
 
 		rear-l-btn-gpios  = <&tlmm 116 GPIO_ACTIVE_LOW>;
 		rear-r-btn-gpios  = <&tlmm  24 GPIO_ACTIVE_LOW>;
+
+		io-channels = <&pm8998_vadc ADC_GPIO2>,
+		      <&pm8998_vadc ADC_GPIO3>,
+		      <&pm8998_vadc ADC_GPIO6_DIV3>,
+		      <&pm8998_vadc ADC_GPIO5>,
+		      <&pm8998_vadc ADC_GPIO1>,
+		      <&pm8998_vadc ADC_GPIO4>;
+		io-channel-names = "gpio9_adc0", "gpio10_adc0", "gpio21_adc1",
+			   "gpio12_adc0", "gpio8_adc0", "gpio11_adc0";
+		#io-channel-cells = <1>;
 	};
 };
 
