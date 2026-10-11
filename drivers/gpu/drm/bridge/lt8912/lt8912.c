@@ -1365,7 +1365,7 @@ static int lt8912_audio_notify(struct lt8912_private *data, bool connected)
 
 	if (connected) {
 		rc = ext->intf_ops.audio_config(data->ext_pdev,
-				EXT_DISPLAY_TYPE_HDMI, state);
+				&ext->codec, state);
 		if (rc) {
 			pr_err("lt8912 audio_config(connect) failed: %d\n", rc);
 			return rc;
@@ -1373,19 +1373,19 @@ static int lt8912_audio_notify(struct lt8912_private *data, bool connected)
 	}
 
 	rc = ext->intf_ops.audio_notify(data->ext_pdev,
-			EXT_DISPLAY_TYPE_HDMI, state);
+			&ext->codec, state);
 	if (rc && rc != -EEXIST) {
 		pr_err("lt8912 audio_notify(%d) failed: %d\n", connected, rc);
 		if (connected)
 			ext->intf_ops.audio_config(data->ext_pdev,
-					EXT_DISPLAY_TYPE_HDMI,
+					&ext->codec,
 					EXT_DISPLAY_CABLE_DISCONNECT);
 		return rc;
 	}
 
 	if (!connected)
 		ext->intf_ops.audio_config(data->ext_pdev,
-				EXT_DISPLAY_TYPE_HDMI, state);
+				&ext->codec, state);
 
 	data->ext_audio_connected = connected;
 	return 0;
@@ -1426,7 +1426,9 @@ static int lt8912_init_ext_disp(struct lt8912_private *data)
 	data->ext_audio_disp_data.intf_data = data;
 	platform_set_drvdata(audio_pdev, &data->ext_audio_disp_data);
 
-	ext->type     = EXT_DISPLAY_TYPE_HDMI;
+	ext->codec.type     = EXT_DISPLAY_TYPE_HDMI;
+	ext->codec.ctrl_id   = 0;//null
+	ext->codec.stream_id = 0;//null
 	ext->pdev     = audio_pdev;
 	ext->intf_data = data;
 
